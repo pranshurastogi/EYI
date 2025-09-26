@@ -160,6 +160,9 @@ export default function HomePage() {
               <Link href="/directory" className="hover:text-var(--eyi-primary) transition-colors">
                 Directory
               </Link>
+              <Link href="/portfolio" className="hover:text-var(--eyi-primary) transition-colors">
+                Portfolio
+              </Link>
               <a href="#modules" className="hover:text-var(--eyi-primary) transition-colors">
                 Modules
               </a>

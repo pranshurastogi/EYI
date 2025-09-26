@@ -57,11 +57,11 @@ export function EYIRing({
       case "verified":
         return "var(--eyi-mint)"
       case "verifying":
-        return "color-mix(in oklab, var(--eyi-primary) 70%, white 30%)"
+        return "color-mix(in oklab, var(--eyi-primary) 80%, var(--eyi-purple) 20%)"
       case "expired":
-        return "var(--destructive)"
+        return "var(--eyi-rose)"
       default:
-        return "color-mix(in oklab, var(--eyi-slate) 70%, transparent)"
+        return "color-mix(in oklab, var(--eyi-slate) 60%, transparent)"
     }
   }
 
@@ -159,21 +159,27 @@ export function EYIRing({
           {[...Array(6)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-gradient-to-r from-var(--eyi-mint) to-var(--eyi-primary) rounded-full"
+              className="absolute w-1 h-1 rounded-full"
               style={{
                 left: `${50 + Math.cos((i * Math.PI * 2) / 6) * 30}%`,
                 top: `${50 + Math.sin((i * Math.PI * 2) / 6) * 30}%`,
+                background: i % 3 === 0 
+                  ? "linear-gradient(45deg, var(--eyi-mint), var(--eyi-primary))"
+                  : i % 3 === 1
+                  ? "linear-gradient(45deg, var(--eyi-primary), var(--eyi-purple))"
+                  : "linear-gradient(45deg, var(--eyi-purple), var(--eyi-pink))"
               }}
               animate={{
-                y: [0, -10, 0],
-                opacity: [0.3, 1, 0.3],
-                scale: [0.8, 1.2, 0.8],
+                y: [0, -15, 0],
+                opacity: [0.4, 1, 0.4],
+                scale: [0.6, 1.4, 0.6],
+                rotate: [0, 180, 360],
               }}
               transition={{
-                duration: 2 + i * 0.2,
+                duration: 2.5 + i * 0.3,
                 repeat: Infinity,
                 ease: "easeInOut",
-                delay: i * 0.1,
+                delay: i * 0.15,
               }}
             />
           ))}

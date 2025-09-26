@@ -4,12 +4,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* EYI brand */
-  --eyi-primary: #2563eb; /* Primary Blue */
-  --eyi-deep: #0b1220; /* Deep Blue (ink/content bg) */
-  --eyi-mint: #14b8a6; /* Success */
-  --eyi-rose: #f43f5e; /* Risk */
+  /* EYI brand - Happier, more energetic colors */
+  --eyi-primary: #3b82f6; /* Brighter, more vibrant blue */
+  --eyi-deep: #0f172a; /* Slightly lighter deep blue */
+  --eyi-mint: #10b981; /* Vibrant emerald green */
+  --eyi-rose: #f59e0b; /* Warm amber instead of red */
   --eyi-slate: #64748b; /* Neutral text */
+  --eyi-purple: #8b5cf6; /* Vibrant purple for accents */
+  --eyi-pink: #ec4899; /* Energetic pink */
+  --eyi-orange: #f97316; /* Warm orange */
 
   /* Map core theme to EYI palette */
   --background: var(--eyi-deep);
@@ -148,10 +151,21 @@
   }
   
   .eyi-gradient-hero {
-    /* radial deep→primary hero gradient */
-    background-image: radial-gradient(
-        80% 80% at 50% 0%,
-        color-mix(in oklab, var(--eyi-primary) 25%, transparent) 0%,
+    /* Energetic multi-color hero gradient */
+    background-image: 
+      radial-gradient(
+        80% 80% at 20% 20%,
+        color-mix(in oklab, var(--eyi-primary) 30%, transparent) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        60% 60% at 80% 80%,
+        color-mix(in oklab, var(--eyi-mint) 25%, transparent) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        70% 70% at 50% 0%,
+        color-mix(in oklab, var(--eyi-purple) 20%, transparent) 0%,
         transparent 60%
       ),
       radial-gradient(
@@ -184,12 +198,12 @@
   
   /* Animated gradient text */
   .eyi-gradient-text {
-    background: linear-gradient(45deg, var(--eyi-primary), var(--eyi-mint), var(--eyi-primary));
-    background-size: 200% 200%;
+    background: linear-gradient(45deg, var(--eyi-primary), var(--eyi-mint), var(--eyi-purple), var(--eyi-pink), var(--eyi-primary));
+    background-size: 300% 300%;
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: gradient-shift 3s ease-in-out infinite;
+    animation: gradient-shift 4s ease-in-out infinite;
   }
   
   @keyframes gradient-shift {
@@ -246,5 +260,111 @@
   
   .eyi-button-glow:hover::before {
     left: 100%;
+  }
+  
+  /* Tagline animation styles */
+  .eyi-tagline-carousel {
+    position: relative;
+    overflow: hidden;
+    min-height: 1.5em;
+    display: flex;
+    align-items: center;
+  }
+  
+  .eyi-tagline-item {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s ease-in-out;
+  }
+  
+  .eyi-tagline-item.active {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+  
+  .eyi-tagline-item.exit {
+    opacity: 0;
+    transform: translateY(-70px);
+  }
+  
+  /* Bouncy text animation */
+  .eyi-bounce-text {
+    animation: bounce-in 0.8s ease-out;
+  }
+  
+  @keyframes bounce-in {
+    0% {
+      transform: scale(0.3) translateY(-50px);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05) translateY(0);
+      opacity: 0.8;
+    }
+    70% {
+      transform: scale(0.95);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  /* Sparkle effect for special elements */
+  .eyi-sparkle {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .eyi-sparkle::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      var(--eyi-primary) 60deg,
+      var(--eyi-mint) 120deg,
+      var(--eyi-purple) 180deg,
+      var(--eyi-pink) 240deg,
+      transparent 300deg,
+      transparent 360deg
+    );
+    animation: sparkle-rotate 3s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .eyi-sparkle:hover::before {
+    opacity: 0.1;
+  }
+  
+  @keyframes sparkle-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Energetic pulse animation */
+  .eyi-energetic-pulse {
+    animation: energetic-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes energetic-pulse {
+    0%, 100% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+    50% {
+      transform: scale(1.05);
+      filter: brightness(1.2);
+    }
   }
 }

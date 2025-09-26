@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { EYIRing } from "@/components/eyi/eyi-ring"
 import { PowerCard } from "@/components/eyi/power-card"
 import { StatusPill } from "@/components/eyi/status-pill"
-import { ArrowRight, Eye, Shield, Zap } from "lucide-react"
+import { MainTagline, TaglineCarousel, AnimatedTagline } from "@/components/eyi/tagline-carousel"
+import { ArrowRight, Eye, Shield, Zap, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 
@@ -15,16 +16,17 @@ export default function HomePage() {
       {/* Hero */}
       <section className="eyi-gradient-hero border-b border-border/40 relative overflow-hidden">
         {/* Animated background elements */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 eyi-particles">
           <motion.div
             className="absolute top-20 left-10 w-32 h-32 rounded-full opacity-20"
             style={{ background: "radial-gradient(circle, var(--eyi-primary), transparent)" }}
             animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.1, 0.3, 0.1],
+              scale: [1, 1.3, 1],
+              opacity: [0.1, 0.4, 0.1],
+              rotate: [0, 180, 360],
             }}
             transition={{
-              duration: 4,
+              duration: 6,
               repeat: Infinity,
               ease: "easeInOut"
             }}
@@ -34,13 +36,45 @@ export default function HomePage() {
             style={{ background: "radial-gradient(circle, var(--eyi-mint), transparent)" }}
             animate={{
               scale: [1.2, 1, 1.2],
-              opacity: [0.1, 0.2, 0.1],
+              opacity: [0.1, 0.3, 0.1],
+              rotate: [360, 180, 0],
             }}
             transition={{
-              duration: 3,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut",
               delay: 1
+            }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/4 w-16 h-16 rounded-full opacity-10"
+            style={{ background: "radial-gradient(circle, var(--eyi-purple), transparent)" }}
+            animate={{
+              scale: [1, 1.5, 1],
+              opacity: [0.05, 0.2, 0.05],
+              x: [0, 20, 0],
+              y: [0, -20, 0],
+            }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2
+            }}
+          />
+          <motion.div
+            className="absolute bottom-1/3 right-1/3 w-20 h-20 rounded-full opacity-12"
+            style={{ background: "radial-gradient(circle, var(--eyi-pink), transparent)" }}
+            animate={{
+              scale: [1.1, 0.8, 1.1],
+              opacity: [0.08, 0.25, 0.08],
+              rotate: [0, -180, -360],
+            }}
+            transition={{
+              duration: 7,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5
             }}
           />
         </div>
@@ -54,12 +88,12 @@ export default function HomePage() {
           >
             <div className="flex items-center gap-2">
               <motion.div 
-                className="size-6 rounded-lg bg-var(--eyi-primary) relative"
+                className="size-6 rounded-lg bg-gradient-to-br from-var(--eyi-primary) to-var(--eyi-mint) relative eyi-sparkle"
                 animate={{ 
                   boxShadow: [
-                    "0 0 0 0 rgba(37, 99, 235, 0.4)",
-                    "0 0 0 10px rgba(37, 99, 235, 0)",
-                    "0 0 0 0 rgba(37, 99, 235, 0)"
+                    "0 0 0 0 rgba(59, 130, 246, 0.4)",
+                    "0 0 0 10px rgba(59, 130, 246, 0)",
+                    "0 0 0 0 rgba(59, 130, 246, 0)"
                   ]
                 }}
                 transition={{
@@ -69,7 +103,7 @@ export default function HomePage() {
                 }}
                 aria-hidden 
               />
-              <span className="text-sm font-semibold tracking-wide">EYI</span>
+              <span className="text-sm font-semibold tracking-wide eyi-gradient-text">EYI</span>
             </div>
             <nav className="hidden md:flex items-center gap-6 text-sm">
               <Link href="/directory" className="hover:text-var(--eyi-primary) transition-colors">
@@ -94,15 +128,16 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <h1 className="text-balance text-4xl md:text-5xl font-bold leading-tight">
+              <MainTagline className="mb-6" />
+              <h1 className="text-balance text-3xl md:text-4xl font-bold leading-tight mb-6">
                 Own your identity.{" "}
                 <motion.span 
-                  className="bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) bg-clip-text text-transparent"
+                  className="eyi-gradient-text"
                   animate={{ 
                     backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
                   }}
                   transition={{
-                    duration: 3,
+                    duration: 4,
                     repeat: Infinity,
                     ease: "easeInOut"
                   }}
@@ -110,15 +145,31 @@ export default function HomePage() {
                   Unlock your powers.
                 </motion.span>
               </h1>
-              <p className="text-pretty text-base text-muted-foreground">
+              <p className="text-pretty text-base text-muted-foreground mb-8">
                 Connect your ENS to Self, GitHub, X, and Farcaster. Get an EYI badge for safer, smarter web3 interactions.
               </p>
+              
+              {/* Animated tagline carousel */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="mb-8 min-h-[2.5rem] flex items-center"
+              >
+                <TaglineCarousel 
+                  className="text-sm md:text-base" 
+                  interval={4000}
+                  showMainTagline={false}
+                />
+              </motion.div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  className="eyi-button-glow"
                 >
-                  <Button className="gap-2">
+                  <Button className="gap-2 bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) hover:from-var(--eyi-mint) hover:to-var(--eyi-purple) border-0 eyi-energetic-pulse">
+                    <Sparkles className="size-4" aria-hidden />
                     Connect Wallet
                     <ArrowRight className="size-4" aria-hidden />
                   </Button>
@@ -127,29 +178,12 @@ export default function HomePage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button variant="secondary" asChild>
+                  <Button variant="secondary" asChild className="eyi-glass hover:border-var(--eyi-primary)/40">
                     <Link href="/directory">See Directory</Link>
                   </Button>
                 </motion.div>
               </div>
 
-              {/* Trust strip */}
-              <div className="eyi-glass rounded-xl p-3 mt-6">
-                <div className="text-xs text-muted-foreground mb-2">
-                  Built with ENS, blockchain attestations, and privacy-first verification.
-                </div>
-                <div className="grid grid-cols-3 gap-3 opacity-80">
-                  <Card className="bg-transparent border-border/40">
-                    <CardContent className="p-3 text-center text-xs">ENS</CardContent>
-                  </Card>
-                  <Card className="bg-transparent border-border/40">
-                    <CardContent className="p-3 text-center text-xs">Attestations</CardContent>
-                  </Card>
-                  <Card className="bg-transparent border-border/40">
-                    <CardContent className="p-3 text-center text-xs">Privacy</CardContent>
-                  </Card>
-                </div>
-              </div>
             </motion.div>
 
             <motion.div 
@@ -177,15 +211,22 @@ export default function HomePage() {
 
       {/* How it works */}
       <section className="mx-auto max-w-6xl px-6 py-14">
-        <motion.h2 
-          className="text-2xl font-semibold mb-6"
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
+          className="mb-6"
         >
-          How it works
-        </motion.h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            How it works
+          </h2>
+          <AnimatedTagline 
+            tagline="Every level makes you stronger."
+            className="text-sm"
+            delay={0.2}
+          />
+        </motion.div>
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
@@ -229,15 +270,22 @@ export default function HomePage() {
 
       {/* Powers preview */}
       <section id="modules" className="mx-auto max-w-6xl px-6 pb-20">
-        <motion.h2 
-          className="text-2xl font-semibold mb-6"
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
+          className="mb-6"
         >
-          Unlock your powers
-        </motion.h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            Unlock your powers
+          </h2>
+          <AnimatedTagline 
+            tagline="Get EYI-d, get superpowers."
+            className="text-sm"
+            delay={0.2}
+          />
+        </motion.div>
         <div className="grid gap-4 md:grid-cols-2">
           {["spark", "build", "voice", "web"].map((type, index) => (
             <motion.div

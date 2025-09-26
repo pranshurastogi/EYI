@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { EYIRing } from "@/components/eyi/eyi-ring"
 import { PowerCard } from "@/components/eyi/power-card"
 import { StatusPill } from "@/components/eyi/status-pill"
@@ -9,8 +8,9 @@ import { MainTagline, TaglineCarousel, AnimatedTagline } from "@/components/eyi/
 import { ENSProfile } from "@/components/ens/ens-profile"
 import { ENSRegistrationPopup } from "@/components/ens/ens-registration-popup"
 import { ENSStatusIndicator } from "@/components/ens/ens-status-indicator"
+import { HowItWorksSection } from "@/components/how-it-works/how-it-works-section"
 import { useENSIntegration } from "@/hooks/use-ens-integration"
-import { ArrowRight, Eye, Shield, Zap, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { usePrivy, useWallets } from "@privy-io/react-auth"
@@ -55,6 +55,11 @@ export default function HomePage() {
   function loginWith(method: 'github' | 'twitter' | 'farcaster') {
     // Open only the requested provider, skipping method selection UI
     login({ loginMethods: [method] })
+  }
+
+  function handleWalletAction() {
+    // Always use connectWallet - this allows switching between wallets
+    connectWallet()
   }
 
   return (
@@ -164,12 +169,12 @@ export default function HomePage() {
               {connectedAddress ? (
                 <div className="flex items-center gap-3">
                   <ENSProfile address={connectedAddress} size="sm" showAddress={false} />
-                  <Button size="sm" variant="outline" onClick={() => connectWallet()}>
+                  <Button size="sm" variant="outline" onClick={handleWalletAction}>
                     Switch Wallet
                   </Button>
                 </div>
               ) : (
-                <Button size="sm" className="ml-2" onClick={() => connectWallet()}>
+                <Button size="sm" className="ml-2" onClick={handleWalletAction}>
                   Connect Wallet
                 </Button>
               )}
@@ -223,7 +228,7 @@ export default function HomePage() {
                   whileTap={{ scale: 0.95 }}
                   className="eyi-button-glow"
                 >
-                  <Button onClick={() => connectWallet()} className="gap-2 bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) hover:from-var(--eyi-mint) hover:to-var(--eyi-purple) border-0 eyi-energetic-pulse">
+                  <Button onClick={handleWalletAction} className="gap-2 bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) hover:from-var(--eyi-mint) hover:to-var(--eyi-purple) border-0 eyi-energetic-pulse">
                     <Sparkles className="size-4" aria-hidden />
                     {connectedAddress ? (hasENS ? `Connected • ${ensName}` : `Connected • ${shortAddr(connectedAddress)}`) : "Connect Wallet"}
                     <ArrowRight className="size-4" aria-hidden />
@@ -270,63 +275,12 @@ export default function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="mx-auto max-w-6xl px-6 py-14">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="mb-6"
-        >
-          <h2 className="text-2xl font-semibold mb-2">
-            How it works
-          </h2>
-          <AnimatedTagline 
-            tagline="Every level makes you stronger."
-            className="text-sm"
-            delay={0.2}
-          />
-        </motion.div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            {
-              icon: <Eye className="size-6 text-var(--eyi-primary)" />,
-              title: "Connect",
-              description: "Check your ENS and get guidance to register if you don't have one."
-            },
-            {
-              icon: <Shield className="size-6 text-var(--eyi-mint)" />,
-              title: "Verify", 
-              description: "Complete Spark, Build, Voice, and Web to increase trust."
-            },
-            {
-              icon: <Zap className="size-6 text-var(--eyi-primary)" />,
-              title: "Use",
-              description: "Enjoy safer sends, event stamps, and analytics."
-            }
-          ].map((step, index) => (
-            <motion.div
-              key={step.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <Card className="eyi-glass group hover:border-var(--eyi-primary)/40 transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    {step.icon}
-                    <h3 className="font-semibold">{step.title}</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {step.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      <HowItWorksSection
+        connectedAddress={connectedAddress}
+        buildLinked={buildLinked}
+        voiceLinked={voiceLinked}
+        webLinked={webLinked}
+      />
 
       {/* Powers preview */}
       <section id="modules" className="mx-auto max-w-6xl px-6 pb-20">

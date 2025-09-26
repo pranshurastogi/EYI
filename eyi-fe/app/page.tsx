@@ -6,6 +6,10 @@ import { EYIRing } from "@/components/eyi/eyi-ring"
 import { PowerCard } from "@/components/eyi/power-card"
 import { StatusPill } from "@/components/eyi/status-pill"
 import { MainTagline, TaglineCarousel, AnimatedTagline } from "@/components/eyi/tagline-carousel"
+import { ENSProfile } from "@/components/ens/ens-profile"
+import { ENSRegistrationPopup } from "@/components/ens/ens-registration-popup"
+import { ENSStatusIndicator } from "@/components/ens/ens-status-indicator"
+import { useENSIntegration } from "@/hooks/use-ens-integration"
 import { ArrowRight, Eye, Shield, Zap, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -31,6 +35,17 @@ export default function HomePage() {
     user?.wallet?.address ||
     (user?.linkedAccounts?.find((a: any) => a?.type === 'wallet') as any)?.address ||
     undefined
+
+  // ENS Integration
+  const {
+    hasENS,
+    ensName,
+    isLoading: ensLoading,
+    error: ensError,
+    showPopup,
+    hideRegistrationPopup,
+    redirectToENS,
+  } = useENSIntegration(connectedAddress)
 
   function shortAddr(addr?: string) {
     if (!addr) return ""
@@ -146,9 +161,18 @@ export default function HomePage() {
               <a href="#docs" className="hover:text-var(--eyi-primary) transition-colors">
                 Docs
               </a>
-              <Button size="sm" className="ml-2" onClick={() => connectWallet()}>
-                {connectedAddress ? `Connected • ${shortAddr(connectedAddress)}` : "Connect Wallet"}
-              </Button>
+              {connectedAddress ? (
+                <div className="flex items-center gap-3">
+                  <ENSProfile address={connectedAddress} size="sm" showAddress={false} />
+                  <Button size="sm" variant="outline" onClick={() => connectWallet()}>
+                    Switch Wallet
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" className="ml-2" onClick={() => connectWallet()}>
+                  Connect Wallet
+                </Button>
+              )}
             </nav>
           </motion.header>
 
@@ -201,7 +225,7 @@ export default function HomePage() {
                 >
                   <Button onClick={() => connectWallet()} className="gap-2 bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) hover:from-var(--eyi-mint) hover:to-var(--eyi-purple) border-0 eyi-energetic-pulse">
                     <Sparkles className="size-4" aria-hidden />
-                    {connectedAddress ? `Connected • ${shortAddr(connectedAddress)}` : "Connect Wallet"}
+                    {connectedAddress ? (hasENS ? `Connected • ${ensName}` : `Connected • ${shortAddr(connectedAddress)}`) : "Connect Wallet"}
                     <ArrowRight className="size-4" aria-hidden />
                   </Button>
                 </motion.div>
@@ -225,15 +249,20 @@ export default function HomePage() {
             >
               <EYIRing
                 segments={[
+                  { type: "ens", status: hasENS ? "verified" : "idle" },
                   { type: "spark", status: "idle" },
-                  { type: "build", status: "idle" },
-                  { type: "voice", status: "idle" },
-                  { type: "web", status: "idle" },
+                  { type: "build", status: buildLinked ? "verified" : "idle" },
+                  { type: "voice", status: voiceLinked ? "verified" : "idle" },
+                  { type: "web", status: webLinked ? "verified" : "idle" },
                 ]}
               />
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Status</span>
-                <StatusPill status="NONE" />
+                {connectedAddress ? (
+                  <ENSStatusIndicator address={connectedAddress} />
+                ) : (
+                  <StatusPill status="NONE" />
+                )}
               </div>
             </motion.div>
           </div>
@@ -410,6 +439,17 @@ export default function HomePage() {
       <footer className="border-t border-border/40 py-8 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()} EYI — Docs • Privacy • Terms
       </footer>
+
+      {/* ENS Registration Popup */}
+      {connectedAddress && (
+        <ENSRegistrationPopup
+          isOpen={showPopup}
+          onClose={hideRegistrationPopup}
+          onRedirect={redirectToENS}
+          address={connectedAddress}
+          countdownSeconds={3}
+        />
+      )}
     </main>
   )
 }

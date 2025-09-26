@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion"
 import { useEffect, useState } from "react"
 
-type SegmentType = "spark" | "build" | "voice" | "web"
+type SegmentType = "ens" | "spark" | "build" | "voice" | "web"
 type SegmentStatus = "idle" | "verifying" | "verified" | "expired"
 
 export interface EYISegment {
@@ -52,9 +52,12 @@ export function EYIRing({
     return () => document.removeEventListener('mousemove', handleMouseMove)
   }, [])
 
-  function colorFor(status: SegmentStatus) {
+  function colorFor(status: SegmentStatus, type: SegmentType) {
     switch (status) {
       case "verified":
+        if (type === "ens") {
+          return "var(--eyi-mint)"
+        }
         return "var(--eyi-mint)"
       case "verifying":
         return "color-mix(in oklab, var(--eyi-primary) 80%, var(--eyi-purple) 20%)"
@@ -132,7 +135,7 @@ export function EYIRing({
               cx={size / 2}
               cy={size / 2}
               r={r}
-              stroke={colorFor(seg.status)}
+              stroke={colorFor(seg.status, seg.type)}
               strokeWidth={stroke}
               strokeLinecap="round"
               fill="none"
@@ -141,7 +144,7 @@ export function EYIRing({
               animate={prefersReduced ? {} : { strokeDashoffset: dashOffset }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                filter: isActive ? `drop-shadow(0 0 12px ${colorFor(seg.status)})` : "none",
+                filter: isActive ? `drop-shadow(0 0 12px ${colorFor(seg.status, seg.type)})` : "none",
               }}
             >
               <title>

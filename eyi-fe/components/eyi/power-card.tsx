@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, Megaphone, Network, Sparkles, Wrench } from "lucide-react"
+import { CheckCircle2, Loader2, Megaphone, Network, Sparkles, Wrench } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Type = "spark" | "build" | "voice" | "web"
@@ -49,6 +49,7 @@ export function PowerCard({
   className,
   uid,
   updatedAt,
+  ctaText,
 }: {
   type: Type
   state?: State
@@ -56,6 +57,7 @@ export function PowerCard({
   className?: string
   uid?: string
   updatedAt?: string
+  ctaText?: string
 }) {
   const c = copy[type]
   const isVerified = state === "verified"
@@ -117,7 +119,12 @@ export function PowerCard({
             >
               {c.icon}
             </motion.div>
-            <CardTitle className="text-base">{c.title}</CardTitle>
+            <CardTitle className="text-base flex items-center gap-1">
+              {c.title}
+              {isVerified && (
+                <CheckCircle2 className="size-4 text-(--eyi-mint)" aria-label="Verified" />
+              )}
+            </CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">{c.blurb}</p>
         </CardHeader>
@@ -131,7 +138,7 @@ export function PowerCard({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                ✓ Verified • UID {uid}
+                ✓ Verified • {uid}
                 {updatedAt ? ` • ${updatedAt}` : ""}
               </motion.span>
             ) : state === "expired" ? (
@@ -161,10 +168,10 @@ export function PowerCard({
                 isVerified && "bg-var(--eyi-mint) hover:bg-var(--eyi-mint)/90 text-white",
                 isVerifying && "bg-var(--eyi-primary) hover:bg-var(--eyi-primary)/90"
               )}
-              aria-label={c.cta}
+              aria-label={ctaText ?? c.cta}
             >
               {state === "verifying" && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {c.cta}
+              {ctaText ?? c.cta}
             </Button>
           </motion.div>
         </CardContent>

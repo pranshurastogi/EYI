@@ -7,6 +7,7 @@ import "./globals.css"
 import { Inter } from "next/font/google"
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 import { Suspense } from "react"
+import Providers from "./providers"
 
 export const metadata: Metadata = {
   title: "EYI - No more look-alikes. Only you.",
@@ -21,10 +22,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${GeistMono.variable} antialiased`}>
       <body className="font-sans">
-        <Suspense>
-          {children}
-          <Analytics />
-        </Suspense>
+        <Providers>
+          <Suspense>
+            {children}
+            <Analytics />
+          </Suspense>
+        </Providers>
       </body>
     </html>
   )

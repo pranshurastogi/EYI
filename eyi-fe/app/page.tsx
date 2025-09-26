@@ -9,8 +9,39 @@ import { MainTagline, TaglineCarousel, AnimatedTagline } from "@/components/eyi/
 import { ArrowRight, Eye, Shield, Zap, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { usePrivy, useWallets } from "@privy-io/react-auth"
 
 export default function HomePage() {
+  const { user, authenticated, login, connectWallet, linkWallet, linkGithub, linkTwitter, linkFarcaster, unlinkGithub, unlinkTwitter, unlinkFarcaster } = usePrivy()
+  const { wallets } = useWallets()
+
+  const buildLinked = !!user?.github?.username
+  const buildHandle = user?.github?.username ? `@${user.github.username}` : undefined
+
+  const voiceLinked = !!user?.twitter?.username
+  const voiceHandle = user?.twitter?.username ? `@${user.twitter.username}` : undefined
+
+  const webLinked = !!user?.farcaster?.username
+  const webHandle = user?.farcaster?.username ? `@${user.farcaster.username}` : undefined
+
+  const connectedAddress =
+    // Prefer actively connected wallet from connectors (e.g., MetaMask)
+    wallets?.[0]?.address ||
+    // Fallback to the first verified/linked wallet on the user
+    user?.wallet?.address ||
+    (user?.linkedAccounts?.find((a: any) => a?.type === 'wallet') as any)?.address ||
+    undefined
+
+  function shortAddr(addr?: string) {
+    if (!addr) return ""
+    return addr.length > 10 ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : addr
+  }
+
+  function loginWith(method: 'github' | 'twitter' | 'farcaster') {
+    // Open only the requested provider, skipping method selection UI
+    login({ loginMethods: [method] })
+  }
+
   return (
     <main>
       {/* Hero */}
@@ -115,8 +146,8 @@ export default function HomePage() {
               <a href="#docs" className="hover:text-var(--eyi-primary) transition-colors">
                 Docs
               </a>
-              <Button size="sm" className="ml-2">
-                Connect Wallet
+              <Button size="sm" className="ml-2" onClick={() => connectWallet()}>
+                {connectedAddress ? `Connected • ${shortAddr(connectedAddress)}` : "Connect Wallet"}
               </Button>
             </nav>
           </motion.header>
@@ -168,9 +199,9 @@ export default function HomePage() {
                   whileTap={{ scale: 0.95 }}
                   className="eyi-button-glow"
                 >
-                  <Button className="gap-2 bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) hover:from-var(--eyi-mint) hover:to-var(--eyi-purple) border-0 eyi-energetic-pulse">
+                  <Button onClick={() => connectWallet()} className="gap-2 bg-gradient-to-r from-var(--eyi-primary) to-var(--eyi-mint) hover:from-var(--eyi-mint) hover:to-var(--eyi-purple) border-0 eyi-energetic-pulse">
                     <Sparkles className="size-4" aria-hidden />
-                    Connect Wallet
+                    {connectedAddress ? `Connected • ${shortAddr(connectedAddress)}` : "Connect Wallet"}
                     <ArrowRight className="size-4" aria-hidden />
                   </Button>
                 </motion.div>
@@ -287,17 +318,91 @@ export default function HomePage() {
           />
         </motion.div>
         <div className="grid gap-4 md:grid-cols-2">
-          {["spark", "build", "voice", "web"].map((type, index) => (
-            <motion.div
-              key={type}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <PowerCard type={type as any} />
-            </motion.div>
-          ))}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0 * 0.1 }}
+            viewport={{ once: true }}
+          >
+            <PowerCard type="spark" />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1 * 0.1 }}
+            viewport={{ once: true }}
+          >
+            <PowerCard
+              type="build"
+              state={buildLinked ? "verified" : "idle"}
+              uid={buildHandle}
+              ctaText={buildLinked ? "Disconnect" : "Connect GitHub"}
+              onAction={() => {
+                if (buildLinked && user?.github?.subject) {
+                  unlinkGithub(user.github.subject)
+                } else {
+                  if (authenticated) {
+                    linkGithub()
+                  } else {
+                    loginWith('github')
+                  }
+                }
+              }}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 2 * 0.1 }}
+            viewport={{ once: true }}
+          >
+            <PowerCard
+              type="voice"
+              state={voiceLinked ? "verified" : "idle"}
+              uid={voiceHandle}
+              ctaText={voiceLinked ? "Disconnect" : "Connect X"}
+              onAction={() => {
+                if (voiceLinked && user?.twitter?.subject) {
+                  unlinkTwitter(user.twitter.subject)
+                } else {
+                  if (authenticated) {
+                    linkTwitter()
+                  } else {
+                    loginWith('twitter')
+                  }
+                }
+              }}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 3 * 0.1 }}
+            viewport={{ once: true }}
+          >
+            <PowerCard
+              type="web"
+              state={webLinked ? "verified" : "idle"}
+              uid={webHandle}
+              ctaText={webLinked ? "Disconnect" : "Connect Farcaster"}
+              onAction={() => {
+                if (webLinked && typeof user?.farcaster?.fid === "number") {
+                  unlinkFarcaster(user.farcaster.fid)
+                } else {
+                  if (authenticated) {
+                    // Farcaster linking uses a Privy modal to set up a signer
+                    linkFarcaster()
+                  } else {
+                    // Skip method chooser; open Farcaster path in the modal directly
+                    loginWith('farcaster')
+                  }
+                }
+              }}
+            />
+          </motion.div>
         </div>
       </section>
 

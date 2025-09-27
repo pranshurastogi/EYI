@@ -178,7 +178,11 @@ export function PowerCard({
             
             {/* Show ENS text records if available */}
             {ensName && platform && (
-              <ENSTextRecordsCompact ensName={ensName} className="text-xs" />
+              <ENSTextRecordsCompact 
+                ensName={ensName} 
+                platform={platform}
+                className="text-xs" 
+              />
             )}
           </div>
           

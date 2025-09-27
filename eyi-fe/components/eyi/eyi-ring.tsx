@@ -146,12 +146,8 @@ export function EYIRing({
               style={{
                 filter: isActive ? `drop-shadow(0 0 12px ${colorFor(seg.status, seg.type)})` : "none",
               }}
-            >
-              <title>
-                {seg.type} • {seg.status}
-                {seg.expiry ? ` • expires ${seg.expiry}` : ""}
-              </title>
-            </motion.circle>
+              aria-label={`${seg.type} • ${seg.status}${seg.expiry ? ` • expires ${seg.expiry}` : ""}`}
+            />
           )
         })}
       </svg>

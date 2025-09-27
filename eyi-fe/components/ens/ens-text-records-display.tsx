@@ -157,14 +157,16 @@ export function ENSTextRecordsDisplay({ ensName, className }: ENSTextRecordsDisp
 }
 
 /**
- * Compact version for power cards
+ * Compact version for power cards - shows only the specific platform record
  */
-export function ENSTextRecordsCompact({ ensName, className }: ENSTextRecordsDisplayProps) {
+export function ENSTextRecordsCompact({ 
+  ensName, 
+  className, 
+  platform 
+}: ENSTextRecordsDisplayProps & { platform?: 'github' | 'twitter' | 'farcaster' }) {
   const { records, isLoading, hasRecords } = useENSTextRecords(ensName)
 
-  // For testing: show mock data when no ENS records
-  if (!ensName || isLoading || !hasRecords) {
-    // Show mock icons for testing
+  if (isLoading) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -172,21 +174,51 @@ export function ENSTextRecordsCompact({ ensName, className }: ENSTextRecordsDisp
         transition={{ duration: 0.3 }}
         className={cn("flex items-center gap-1", className)}
       >
-        <div className="flex -space-x-1">
-          <div className="size-6 rounded-full border-2 border-background flex items-center justify-center bg-gray-50">
-            <Github className="size-3 text-gray-600" />
-          </div>
-          <div className="size-6 rounded-full border-2 border-background flex items-center justify-center bg-blue-50">
-            <Twitter className="size-3 text-blue-600" />
-          </div>
-          <div className="size-6 rounded-full border-2 border-background flex items-center justify-center bg-purple-50">
-            <MessageCircle className="size-3 text-purple-600" />
-          </div>
+        <div className="size-6 rounded-full border-2 border-background flex items-center justify-center bg-gray-50">
+          <Loader2 className="size-3 text-gray-600 animate-spin" />
         </div>
       </motion.div>
     )
   }
 
+  if (!ensName || !hasRecords) {
+    return null
+  }
+
+  // If platform is specified, show only that platform's record
+  if (platform) {
+    const platformKey = platform === 'github' ? ENS_TEXT_RECORD_KEYS.GITHUB :
+                        platform === 'twitter' ? ENS_TEXT_RECORD_KEYS.TWITTER :
+                        ENS_TEXT_RECORD_KEYS.FARCASTER
+    
+    const record = records[platformKey]
+    if (!record?.verified) {
+      return null
+    }
+
+    const config = PLATFORM_CONFIG[platformKey]
+    if (!config) return null
+
+    const Icon = config.icon
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={cn("flex items-center gap-1", className)}
+      >
+        <div className="size-6 rounded-full border-2 border-background flex items-center justify-center bg-var(--eyi-mint)/10">
+          <Icon className="size-3 text-var(--eyi-mint)" />
+        </div>
+        <span className="text-xs text-var(--eyi-mint) font-medium">
+          {record.value}
+        </span>
+      </motion.div>
+    )
+  }
+
+  // Show all verified records (fallback behavior)
   const verifiedCount = Object.values(records).filter(record => record.verified).length
 
   if (verifiedCount === 0) {

@@ -1,0 +1,24 @@
+specVersion: v0.1.0
+
+package:
+  name: wallet_filter
+  version: v0.1.0
+
+# Import the remote package
+imports:
+  ethereum_explorer: https://github.com/streamingfast/substreams-explorers/releases/download/v1.0.1/ethereum-explorer-v0.1.2.spkg
+
+# Reference your compiled WASM here
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/wallet_filter.wasm
+
+modules:
+  - name: wallet_filter
+    kind: map
+    # This module simply re‑emits the remote module’s output.
+    inputs:
+      - map: ethereum_explorer:map_filter_transactions
+    output:
+      type: proto:eth.transaction.v1.Transactions

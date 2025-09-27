@@ -65,13 +65,17 @@ export function PortfolioCharts({ data, transactions, isLoading, showPrivateData
   const monthlyData = data.monthlyStats.map(stat => ({
     month: stat.month,
     transactions: showPrivateData ? stat.transactions : 0,
-    gasUsed: showPrivateData ? (stat.gasUsed / 1e18) : 0,
+    gasUsed: showPrivateData ? stat.gasUsed : 0,
     volume: showPrivateData ? (stat.volume / 1e18) : 0
   }))
 
-  const networkData = data.networks.map(network => ({
+  const networkCounts: Record<string, number> = {}
+  transactions.forEach((tx) => {
+    networkCounts[tx.network] = (networkCounts[tx.network] || 0) + 1
+  })
+  const networkData = Object.entries(networkCounts).map(([network, count]) => ({
     name: network.split('-')[0],
-    value: showPrivateData ? Math.floor(Math.random() * 100) + 10 : 0, // Mock data for demo
+    value: showPrivateData ? count : 0,
     color: getNetworkColor(network)
   }))
 
@@ -170,7 +174,7 @@ export function PortfolioCharts({ data, transactions, isLoading, showPrivateData
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip 
-                        formatter={(value: any) => [showPrivateData ? `${value.toFixed(4)} ETH` : "***", "Gas Used"]}
+                        formatter={(value: any) => [showPrivateData ? `${Number(value).toLocaleString()} gas` : "***", "Gas Used"]}
                         labelFormatter={(label) => `Month: ${label}`}
                       />
                       <Line 

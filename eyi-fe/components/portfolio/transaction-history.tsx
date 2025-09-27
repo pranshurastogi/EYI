@@ -266,8 +266,20 @@ export function TransactionHistory({
                           <code className="text-xs font-mono">
                             {showPrivateData ? `${tx.hash.slice(0, 8)}...${tx.hash.slice(-6)}` : "***"}
                           </code>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <ExternalLink className="h-3 w-3" />
+                          <Button 
+                            asChild 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0"
+                          >
+                            <a
+                              href={`https://etherscan.io/tx/${tx.hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="View on Etherscan"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
                           </Button>
                         </div>
                       </TableCell>

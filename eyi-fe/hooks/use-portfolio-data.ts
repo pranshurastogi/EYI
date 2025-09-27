@@ -56,11 +56,10 @@ export interface PortfolioData {
   }>
 }
 
-export interface AlchemyResponse {
+export interface PortfolioApiResponse {
   transactions: Transaction[]
-  before?: string
-  after?: string
-  totalCount: number
+  totalCount?: number
+  error?: string
 }
 
 export function usePortfolioData(address?: string) {
@@ -73,70 +72,23 @@ export function usePortfolioData(address?: string) {
   const [searchQuery, setSearchQuery] = useState('')
 
   const fetchTransactions = useCallback(async (address: string, network: string, limit: number = 25) => {
-    // Try multiple possible environment variable names
-    const apiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 
-                   process.env.NEXT_PUBLIC_API_KEY || 
-                   process.env.API_KEY ||
-                   (typeof window !== 'undefined' ? (window as any).ALCHEMY_API_KEY : undefined)
-    
-    // Debug logging
-    console.log('API Key Debug:', {
-      NEXT_PUBLIC_ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY ? 'Set' : 'Not set',
-      NEXT_PUBLIC_API_KEY: process.env.NEXT_PUBLIC_API_KEY ? 'Set' : 'Not set',
-      API_KEY: process.env.API_KEY ? 'Set' : 'Not set',
-      windowKey: typeof window !== 'undefined' ? ((window as any).ALCHEMY_API_KEY ? 'Set' : 'Not set') : 'N/A',
-      finalApiKey: apiKey ? 'Found' : 'Not found',
-      allEnvVars: Object.keys(process.env).filter(key => key.includes('API') || key.includes('ALCHEMY'))
-    })
-    
-    if (!apiKey) {
-      throw new Error('Alchemy API key not configured. Please set NEXT_PUBLIC_ALCHEMY_API_KEY or API_KEY in your environment variables.')
-    }
+    const params = new URLSearchParams({ address, network, limit: String(limit) })
+    const url = `/api/portfolio?${params.toString()}`
 
-    // Validate API key format
-    if (!apiKey.startsWith('alcht_') && !apiKey.startsWith('demo')) {
-      console.warn('API key format may be incorrect. Alchemy API keys typically start with "alcht_"')
-    }
+    console.log('Portfolio API Request:', { url, address, network, limit })
 
-    const requestBody = {
-      addresses: [
-        {
-          address: address,
-          networks: [network]
-        }
-      ],
-      limit
-    }
+    const response = await fetch(url, { method: 'GET' })
 
-    console.log('API Request Debug:', {
-      url: `https://api.g.alchemy.com/data/v1/${apiKey}/transactions/history/by-address`,
-      method: 'POST',
-      body: requestBody,
-      address,
-      network
-    })
+    console.log('Portfolio API Response:', { status: response.status, ok: response.ok })
 
-    const response = await fetch(`https://api.g.alchemy.com/data/v1/${apiKey}/transactions/history/by-address`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    })
-
-    console.log('API Response Debug:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    })
+    const data = (await response.json()) as PortfolioApiResponse
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('API Error Response:', errorText)
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`)
+      const msg = data?.error || `API request failed with status ${response.status}`
+      throw new Error(msg)
     }
 
-    return response.json() as Promise<AlchemyResponse>
+    return data
   }, [])
 
   const processPortfolioData = useCallback((transactions: Transaction[]): PortfolioData => {
@@ -227,7 +179,7 @@ export function usePortfolioData(address?: string) {
     setError(null)
 
     try {
-      const response = await fetchTransactions(address, selectedNetwork, 25)
+      const response = await fetchTransactions(address, selectedNetwork, 50)
       console.log('API Response:', response)
       console.log('Transaction count:', response.transactions?.length || 0)
       
@@ -246,12 +198,12 @@ export function usePortfolioData(address?: string) {
       console.error('Portfolio data fetch error:', err)
       
       // If API key is not configured, show mock data for demo purposes
-      if (err instanceof Error && err.message.includes('API key not configured')) {
+      if (err instanceof Error && err.message.toLowerCase().includes('api key not configured')) {
         const mockTransactions = generateMockTransactions(address)
         setTransactions(mockTransactions)
         const processedData = processPortfolioData(mockTransactions)
         setPortfolioData(processedData)
-        setError('Demo mode: Using mock data. Please set API_KEY in your .env.local file and restart the dev server.')
+        setError('Demo mode: Using mock data. Please set ETHERSCAN_API_KEY in eyi-fe/.env.local and restart the dev server.')
       } else {
         setError(err instanceof Error ? err.message : 'Failed to fetch portfolio data')
       }

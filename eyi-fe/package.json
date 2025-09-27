@@ -47,6 +47,8 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "ethers": "^6.15.0",
+    "@selfxyz/qrcode": "^1.0.15",
+    "@selfxyz/common": "^0.0.8",
     "framer-motion": "latest",
     "geist": "latest",
     "input-otp": "1.4.1",

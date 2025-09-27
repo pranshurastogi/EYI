@@ -11,9 +11,11 @@ import { ENSStatusIndicator } from "@/components/ens/ens-status-indicator"
 import { HowItWorksSection } from "@/components/how-it-works/how-it-works-section"
 import { useENSIntegration } from "@/hooks/use-ens-integration"
 import { useSocialVerification } from "@/hooks/use-social-verification"
+import { useEYISegments } from "@/hooks/use-eyi-segments"
 import { ArrowRight, Sparkles, LogOut } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { useEffect } from "react"
 import { usePrivy, useWallets, useLogout } from "@privy-io/react-auth"
 
 export default function HomePage() {
@@ -22,9 +24,6 @@ export default function HomePage() {
   const { logout } = useLogout({
     onSuccess: () => {
       // No-op; UI will re-render based on auth state
-    },
-    onError: () => {
-      // Swallow logout errors to keep UX simple
     }
   })
 
@@ -59,6 +58,20 @@ export default function HomePage() {
 
   // Social Verification
   const { verifyAndUpdatePlatform, getPlatformStatus } = useSocialVerification(ensName || undefined)
+  
+  // EYI Segments management
+  const { segments, ringSegments, verifySegment, startVerification } = useEYISegments()
+
+  // Update segments based on actual verification status
+  useEffect(() => {
+    // Update ENS segment
+    verifySegment("ens", hasENS ? connectedAddress : undefined);
+    
+    // Update other segments based on Privy connections
+    if (buildLinked) verifySegment("build", buildHandle);
+    if (voiceLinked) verifySegment("voice", voiceHandle);
+    if (webLinked) verifySegment("web", webHandle);
+  }, [hasENS, buildLinked, voiceLinked, webLinked, connectedAddress, buildHandle, voiceHandle, webHandle, verifySegment]);
 
   function shortAddr(addr?: string) {
     if (!addr) return ""
@@ -156,9 +169,9 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-6">
               <motion.div 
-                className="size-6 rounded-lg bg-gradient-to-br from-var(--eyi-primary) to-var(--eyi-mint) relative eyi-sparkle"
+                className="size-28 rounded-lg relative eyi-sparkle"
                 animate={{ 
                   boxShadow: [
                     "0 0 0 0 rgba(59, 130, 246, 0.4)",
@@ -172,22 +185,22 @@ export default function HomePage() {
                   ease: "easeOut"
                 }}
                 aria-hidden 
-              />
-              <span className="text-sm font-semibold tracking-wide eyi-gradient-text">EYI</span>
+              >
+                <img 
+                  src="/EYI-logo.png" 
+                  alt="EYI Logo" 
+                  className="size-28 rounded-lg object-contain"
+                />
+              </motion.div>
+              <span className="text-4xl font-bold tracking-wide eyi-gradient-text">EYI</span>
             </div>
-            <nav className="hidden md:flex items-center gap-6 text-sm">
+            <nav className="hidden md:flex items-center gap-8 text-base font-medium">
               <Link href="/directory" className="hover:text-var(--eyi-primary) transition-colors">
                 Directory
               </Link>
               <Link href="/portfolio" className="hover:text-var(--eyi-primary) transition-colors">
                 Portfolio
               </Link>
-              <a href="#modules" className="hover:text-var(--eyi-primary) transition-colors">
-                Modules
-              </a>
-              <a href="#docs" className="hover:text-var(--eyi-primary) transition-colors">
-                Docs
-              </a>
               {connectedAddress ? (
                 <div className="flex items-center gap-3">
                   <ENSProfile address={connectedAddress} size="sm" showAddress={false} />
@@ -215,7 +228,7 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <MainTagline className="mb-6" />
-              <h1 className="text-balance text-3xl md:text-4xl font-bold leading-tight mb-6">
+              <h1 className="eyi-heading text-balance text-3xl md:text-4xl leading-tight mb-6">
                 Own your identity.{" "}
                 <motion.span 
                   className="eyi-gradient-text"
@@ -231,7 +244,7 @@ export default function HomePage() {
                   Unlock your powers.
                 </motion.span>
               </h1>
-              <p className="text-pretty text-base text-muted-foreground mb-8">
+              <p className="eyi-body text-pretty text-base mb-8">
                 Connect your ENS to Self, GitHub, X, and Farcaster. Get an EYI badge for safer, smarter web3 interactions.
               </p>
               
@@ -279,13 +292,9 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.4 }}
             >
               <EYIRing
-                segments={[
-                  { type: "ens", status: hasENS ? "verified" : "idle" },
-                  { type: "spark", status: "idle" },
-                  { type: "build", status: buildLinked ? "verified" : "idle" },
-                  { type: "voice", status: voiceLinked ? "verified" : "idle" },
-                  { type: "web", status: webLinked ? "verified" : "idle" },
-                ]}
+                segments={ringSegments}
+                connectedAddress={connectedAddress}
+                ensName={ensName || undefined}
               />
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Status</span>
@@ -317,7 +326,7 @@ export default function HomePage() {
           viewport={{ once: true }}
           className="mb-6"
         >
-          <h2 className="text-2xl font-semibold mb-2">
+          <h2 className="eyi-subheading text-2xl mb-2">
             Unlock your powers
           </h2>
           <AnimatedTagline 
@@ -333,7 +342,14 @@ export default function HomePage() {
             transition={{ duration: 0.6, delay: 0 * 0.1 }}
             viewport={{ once: true }}
           >
-            <PowerCard type="spark" />
+            <PowerCard 
+              type="spark" 
+              state={segments.find(s => s.type === "spark")?.status || "idle"}
+              ensName={ensName || undefined}
+              onVerificationSuccess={(type, userId) => {
+                verifySegment(type, userId);
+              }}
+            />
           </motion.div>
 
           <motion.div
@@ -344,10 +360,13 @@ export default function HomePage() {
           >
             <PowerCard
               type="build"
-              state={buildLinked ? "verified" : "idle"}
+              state={segments.find(s => s.type === "build")?.status || (buildLinked ? "verified" : "idle")}
               uid={buildHandle}
               ctaText={buildLinked ? "Disconnect" : "Connect GitHub"}
               ensName={ensName || undefined}
+              onVerificationSuccess={(type, userId) => {
+                verifySegment(type, userId);
+              }}
               onAction={async () => {
                 if (buildLinked && user?.github?.subject) {
                   unlinkGithub(user.github.subject)
@@ -371,10 +390,13 @@ export default function HomePage() {
           >
             <PowerCard
               type="voice"
-              state={voiceLinked ? "verified" : "idle"}
+              state={segments.find(s => s.type === "voice")?.status || (voiceLinked ? "verified" : "idle")}
               uid={voiceHandle}
               ctaText={voiceLinked ? "Disconnect" : "Connect X"}
               ensName={ensName || undefined}
+              onVerificationSuccess={(type, userId) => {
+                verifySegment(type, userId);
+              }}
               onAction={async () => {
                 if (voiceLinked && user?.twitter?.subject) {
                   unlinkTwitter(user.twitter.subject)
@@ -398,10 +420,13 @@ export default function HomePage() {
           >
             <PowerCard
               type="web"
-              state={webLinked ? "verified" : "idle"}
+              state={segments.find(s => s.type === "web")?.status || (webLinked ? "verified" : "idle")}
               uid={webHandle}
               ctaText={webLinked ? "Disconnect" : "Connect Farcaster"}
               ensName={ensName || undefined}
+              onVerificationSuccess={(type, userId) => {
+                verifySegment(type, userId);
+              }}
               onAction={async () => {
                 if (webLinked && typeof user?.farcaster?.fid === "number") {
                   unlinkFarcaster(user.farcaster.fid)

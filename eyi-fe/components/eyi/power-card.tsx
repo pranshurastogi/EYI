@@ -10,6 +10,7 @@ import { CheckCircle2, Loader2, Megaphone, Network, Sparkles, Wrench, Star } fro
 import { cn } from "@/lib/utils";
 import { ENSTextRecordsCompact } from "@/components/ens/ens-text-records-display";
 import { usePlatformTextRecord } from "@/hooks/use-ens-text-records";
+import { useEYISegments } from "@/hooks/use-eyi-segments";
 
 import VerifyWithSelf from "@/components/self/verify-with-self";
 
@@ -59,6 +60,7 @@ export function PowerCard({
   updatedAt,
   ctaText,
   ensName,
+  onVerificationSuccess,
 }: {
   type: Type;
   state?: State;
@@ -68,6 +70,7 @@ export function PowerCard({
   updatedAt?: string;
   ctaText?: string;
   ensName?: string;
+  onVerificationSuccess?: (type: Type, userId: string) => void;
 }) {
   const c = copy[type];
   const isVerified = state === "verified";
@@ -77,6 +80,25 @@ export function PowerCard({
   const platform =
     type === "build" ? "github" : type === "voice" ? "twitter" : type === "web" ? "farcaster" : undefined;
   const { hasRecord: hasENSRecord } = usePlatformTextRecord(ensName, platform);
+  
+  // EYI segments management
+  const { verifySegment, startVerification } = useEYISegments();
+
+  // Prevent auto-closing by maintaining state properly
+  const handleVerificationSuccess = (userId: string) => {
+    // Update the power card state to verified
+    setShowVerify(false);
+    // Update EYI ring segment
+    verifySegment("spark", userId);
+    // Call parent callback
+    onVerificationSuccess?.("spark", userId);
+    console.log("Self verification successful for:", userId);
+  };
+
+  const handleStartVerification = () => {
+    startVerification("spark");
+    setShowVerify(true);
+  };
 
   // Self config (seed only; SDK v1.0.15)
   const CONTRACT = "0xE85B8De9B56d8ce4fCdF0cd7D5B083F7d92b4459".toLowerCase();
@@ -84,7 +106,7 @@ export function PowerCard({
 
   return (
     <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-      <Card className={cn("bg-card/70 border-border/60 group relative overflow-hidden transition-all duration-300", className)}>
+      <Card className={cn("eyi-card group relative overflow-hidden", className)}>
         <CardHeader className="space-y-1 relative z-10">
           <div className="flex items-center gap-2">
             {c.icon}
@@ -104,28 +126,29 @@ export function PowerCard({
         
         <CardContent className="flex items-center justify-between relative z-10">
           <div className="flex flex-col gap-2">
-            <div className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
               {state === "verified" && uid ? (
                 <motion.span 
-                  className="text-var(--eyi-mint) font-medium"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
+                  className="eyi-status-verified"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 >
                   ✓ Verified • {uid}
                   {updatedAt ? ` • ${updatedAt}` : ""}
                 </motion.span>
               ) : state === "expired" ? (
-                <span className="text-var(--destructive)">⚠ Expired — renew to keep your power active</span>
+                <span className="eyi-status-idle">⚠ Expired — renew to keep your power active</span>
               ) : state === "verifying" ? (
                 <motion.span
+                  className="eyi-status-verifying"
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
                   Verifying…
                 </motion.span>
               ) : (
-                <span>Not started</span>
+                <span className="eyi-status-idle">Not started</span>
               )}
             </div>
             
@@ -149,12 +172,14 @@ export function PowerCard({
                   active={true}
                   contract={CONTRACT}
                   scopeSeed={SCOPE_SEED}
+                  onVerificationSuccess={handleVerificationSuccess}
+                  className="w-full"
                 />
               ) : (
                 <Button
                   size="sm"
-                  onClick={() => setShowVerify(true)}
-                  className="gap-2 transition-all duration-200"
+                  onClick={handleStartVerification}
+                  className="gap-2 transition-all duration-200 eyi-button-glow"
                 >
                   {ctaText ?? c.cta}
                 </Button>

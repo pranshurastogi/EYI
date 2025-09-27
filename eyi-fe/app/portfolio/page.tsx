@@ -282,13 +282,17 @@ export default function PortfolioPage() {
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <a href="/" className="flex items-center gap-2">
-                  <div className="size-6 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400" />
-                  <span className="font-semibold">EYI</span>
+              <Button variant="ghost" size="lg" asChild>
+                <a href="/" className="flex items-center gap-6">
+                  <img 
+                    src="/EYI-logo.png" 
+                    alt="EYI Logo" 
+                    className="size-28 rounded-lg object-contain"
+                  />
+                  <span className="text-4xl font-bold eyi-gradient-text">EYI</span>
                 </a>
               </Button>
-              <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="hidden md:flex items-center gap-2 text-base font-medium text-muted-foreground">
                 <span>/</span>
                 <span>Portfolio</span>
               </div>

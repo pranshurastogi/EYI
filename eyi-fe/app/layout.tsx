@@ -11,7 +11,12 @@ import Providers from "./providers"
 
 export const metadata: Metadata = {
   title: "EYI - No more look-alikes. Only you.",
-  description: "EYI: Empower your Identity. Connect your ENS to Self, GitHub, X, and Farcaster. Get an EYI badge for safer, smarter web3 interactions."
+  description: "EYI: Empower your Identity. Connect your ENS to Self, GitHub, X, and Farcaster. Get an EYI badge for safer, smarter web3 interactions.",
+  icons: {
+    icon: '/EYI-logo.png',
+    shortcut: '/EYI-logo.png',
+    apple: '/EYI-logo.png',
+  },
 }
 
 export default function RootLayout({

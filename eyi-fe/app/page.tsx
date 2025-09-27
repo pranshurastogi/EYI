@@ -11,14 +11,22 @@ import { ENSStatusIndicator } from "@/components/ens/ens-status-indicator"
 import { HowItWorksSection } from "@/components/how-it-works/how-it-works-section"
 import { useENSIntegration } from "@/hooks/use-ens-integration"
 import { useSocialVerification } from "@/hooks/use-social-verification"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles, LogOut } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { usePrivy, useWallets } from "@privy-io/react-auth"
+import { usePrivy, useWallets, useLogout } from "@privy-io/react-auth"
 
 export default function HomePage() {
-  const { user, authenticated, login, connectWallet, linkWallet, linkGithub, linkTwitter, linkFarcaster, unlinkGithub, unlinkTwitter, unlinkFarcaster } = usePrivy()
+  const { user, authenticated, ready, login, connectWallet, linkWallet, linkGithub, linkTwitter, linkFarcaster, unlinkGithub, unlinkTwitter, unlinkFarcaster } = usePrivy()
   const { wallets } = useWallets()
+  const { logout } = useLogout({
+    onSuccess: () => {
+      // No-op; UI will re-render based on auth state
+    },
+    onError: () => {
+      // Swallow logout errors to keep UX simple
+    }
+  })
 
   const buildLinked = !!user?.github?.username
   const buildHandle = user?.github?.username ? `@${user.github.username}` : undefined
@@ -29,13 +37,14 @@ export default function HomePage() {
   const webLinked = !!user?.farcaster?.username
   const webHandle = user?.farcaster?.username ? `@${user.farcaster.username}` : undefined
 
-  const connectedAddress =
-    // Prefer actively connected wallet from connectors (e.g., MetaMask)
+  const primaryAddress =
     wallets?.[0]?.address ||
-    // Fallback to the first verified/linked wallet on the user
     user?.wallet?.address ||
     (user?.linkedAccounts?.find((a: any) => a?.type === 'wallet') as any)?.address ||
     undefined
+
+  // Consider connected only when Privy is ready AND user is authenticated
+  const connectedAddress = (ready && authenticated) ? primaryAddress : undefined
 
   // ENS Integration
   const {
@@ -62,8 +71,14 @@ export default function HomePage() {
   }
 
   function handleWalletAction() {
-    // Always use connectWallet - this allows switching between wallets
-    connectWallet()
+    if (!ready) return
+    // Use Privy login with wallet method to ensure a session + wallet connect
+    login({ loginMethods: ['wallet'] })
+  }
+
+  function handleDisconnect() {
+    if (!ready || !authenticated) return
+    logout()
   }
 
   return (
@@ -179,9 +194,13 @@ export default function HomePage() {
                   <Button size="sm" variant="outline" onClick={handleWalletAction}>
                     Switch Wallet
                   </Button>
+                  <Button size="sm" variant="outline" onClick={handleDisconnect} disabled={!ready || (ready && !authenticated)} className="gap-2">
+                    <LogOut className="h-4 w-4" />
+                    Disconnect
+                  </Button>
                 </div>
               ) : (
-                <Button size="sm" className="ml-2" onClick={handleWalletAction}>
+                <Button size="sm" className="ml-2" onClick={handleWalletAction} disabled={!ready}>
                   Connect Wallet
                 </Button>
               )}

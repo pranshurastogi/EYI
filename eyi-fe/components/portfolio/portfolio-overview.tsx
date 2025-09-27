@@ -67,9 +67,9 @@ export function PortfolioOverview({ data, isLoading, showPrivateData }: Portfoli
     })
   }
 
-  const formatGas = (gas: number) => {
+  const formatWeiToEth = (wei: number) => {
     if (!showPrivateData) return "***"
-    return (gas / 1e18).toFixed(6)
+    return (wei / 1e18).toFixed(6)
   }
 
   return (
@@ -121,13 +121,13 @@ export function PortfolioOverview({ data, isLoading, showPrivateData }: Portfoli
         >
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Gas Used</CardTitle>
+              <CardTitle className="text-sm font-medium">Gas Spent</CardTitle>
               <Fuel className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatGas(data.totalGasUsed)} ETH</div>
+              <div className="text-2xl font-bold">{formatWeiToEth(data.totalGasSpent)} ETH</div>
               <p className="text-xs text-muted-foreground">
-                Avg: {showPrivateData ? `${(data.averageGasPrice / 1e9).toFixed(2)} Gwei` : "***"}
+                Avg gas price: {showPrivateData ? `${(data.averageGasPrice / 1e9).toFixed(2)} Gwei` : "***"}
               </p>
             </CardContent>
           </Card>
@@ -157,54 +157,7 @@ export function PortfolioOverview({ data, isLoading, showPrivateData }: Portfoli
         </motion.div>
       </div>
 
-      {/* Top Contracts */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Top Contract Interactions
-            </CardTitle>
-            <CardDescription>
-              Most frequently interacted with contracts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {data.topContracts.slice(0, 5).map((contract, index) => (
-                <div key={contract.address} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium">{contract.name}</p>
-                      <p className="text-sm text-muted-foreground font-mono">
-                        {showPrivateData ? contract.address : "***"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{contract.count} txns</Badge>
-                    <div className="w-20 bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${(contract.count / data.topContracts[0]?.count) * 100}%` 
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* Top Contracts section intentionally removed */}
 
       {/* Monthly Activity */}
       <motion.div

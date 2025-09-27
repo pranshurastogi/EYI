@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { usePrivy, useWallets } from "@privy-io/react-auth"
+import { usePrivy, useWallets, useLogout } from "@privy-io/react-auth"
 import { motion } from "framer-motion"
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -30,7 +31,8 @@ import {
   Network,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  LogOut
 } from "lucide-react"
 import { PortfolioOverview } from "@/components/portfolio/portfolio-overview"
 import { TransactionHistory } from "@/components/portfolio/transaction-history"
@@ -152,18 +154,26 @@ const getMonthlyStats = (transactions: any[]) => {
 }
 
 export default function PortfolioPage() {
-  const { user, authenticated, login } = usePrivy()
+  const { user, authenticated, ready, login, connectWallet } = usePrivy()
   const { wallets } = useWallets()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const queryAddress = (searchParams?.get('address') || '').trim()
+  const { logout } = useLogout({
+    onSuccess: () => { try { router.replace(pathname) } catch {} },
+    onError: () => {}
+  })
   
-  const connectedAddress = 
-    // Prefer actively connected wallet from connectors (e.g., MetaMask)
-    wallets?.[0]?.address ||
-    // Fallback to the first verified/linked wallet on the user
-    user?.wallet?.address ||
-    (user?.linkedAccounts?.find((a: any) => a?.type === 'wallet') as any)?.address ||
-    // Additional fallback for embedded wallets
-    (user?.linkedAccounts?.find((a: any) => a?.address) as any)?.address ||
-    undefined
+  const connectedAddress =
+    authenticated
+      ? (
+          wallets?.[0]?.address ||
+          user?.wallet?.address ||
+          (user?.linkedAccounts?.find((a: any) => a?.type === 'wallet') as any)?.address ||
+          (user?.linkedAccounts?.find((a: any) => a?.address) as any)?.address
+        )
+      : undefined
   
   const {
     portfolioData,
@@ -171,8 +181,6 @@ export default function PortfolioPage() {
     isLoading,
     error,
     refreshData,
-    selectedNetwork,
-    setSelectedNetwork,
     dateRange,
     setDateRange,
     searchQuery,
@@ -191,6 +199,16 @@ export default function PortfolioPage() {
   const [showPrivateData, setShowPrivateData] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
 
+  const handleDisconnect = () => {
+    if (!ready || !authenticated) return
+    logout()
+  }
+
+  const handleConnect = () => {
+    // Ensure a Privy session + wallet connect
+    login({ loginMethods: ['wallet'] })
+  }
+
   // Debug logging
   useEffect(() => {
     console.log('Portfolio Debug:', {
@@ -203,55 +221,35 @@ export default function PortfolioPage() {
     })
   }, [authenticated, connectedAddress, user, wallets, retryCount])
 
-  // Retry mechanism for wallet detection
+  // Retry mechanism for wallet detection (relaxed: no auth requirement)
   useEffect(() => {
-    if (authenticated && !connectedAddress && retryCount < 3) {
+    if (!connectedAddress && retryCount < 3) {
       const timer = setTimeout(() => {
         setRetryCount(prev => prev + 1)
-      }, 1000)
+      }, 800)
       return () => clearTimeout(timer)
     }
-  }, [authenticated, connectedAddress, retryCount])
+  }, [connectedAddress, retryCount])
 
-  // Show loading state while checking authentication
-  if (authenticated && !connectedAddress) {
+  // Wait for Privy to initialize to avoid flicker
+  if (!ready) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
               <RefreshCw className="h-5 w-5 animate-spin" />
-              Loading Portfolio
+              Initializing
             </CardTitle>
-            <CardDescription>
-              Detecting your wallet address...
-            </CardDescription>
+            <CardDescription>Preparing your portfolio...</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-3">
-                Attempt {retryCount + 1} of 3
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => window.location.reload()}
-                className="gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh Page
-              </Button>
-            </div>
-          </CardContent>
         </Card>
       </div>
     )
   }
 
-  if (!authenticated || !connectedAddress) {
+  // If no wallet address, prompt to connect
+  if (!connectedAddress) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -261,34 +259,13 @@ export default function PortfolioPage() {
               Portfolio Access
             </CardTitle>
             <CardDescription>
-              {!authenticated 
-                ? 'Please connect your wallet to view your portfolio data' 
-                : retryCount >= 3 
-                  ? 'Unable to detect wallet address. Please try refreshing the page or reconnecting your wallet.'
-                  : 'No wallet address found. Please connect a wallet.'
-              }
+              Connect a wallet to view your portfolio data
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {!authenticated ? (
-              <Button className="w-full" onClick={() => login()}>
-                Connect Wallet
-              </Button>
-            ) : (
-              <>
-                <Button className="w-full" onClick={() => window.location.href = '/'}>
-                  Go to Home
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Page
-                </Button>
-              </>
-            )}
+            <Button className="w-full" onClick={handleConnect}>
+              Connect Wallet
+            </Button>
             <Button variant="outline" className="w-full" onClick={() => window.location.href = '/'}>
               Back to Home
             </Button>
@@ -318,6 +295,16 @@ export default function PortfolioPage() {
             </div>
             
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDisconnect}
+                disabled={!ready || (ready && !authenticated)}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Disconnect
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -391,19 +378,8 @@ export default function PortfolioPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Select value={selectedNetwork} onValueChange={setSelectedNetwork}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Network" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="eth-mainnet">Ethereum</SelectItem>
-                  <SelectItem value="base-mainnet">Base</SelectItem>
-                  <SelectItem value="polygon-mainnet">Polygon</SelectItem>
-                  <SelectItem value="arbitrum-mainnet">Arbitrum</SelectItem>
-                  <SelectItem value="optimism-mainnet">Optimism</SelectItem>
-                </SelectContent>
-              </Select>
-              
+              <Badge variant="secondary">Ethereum</Badge>
+
               <Select value={dateRange} onValueChange={setDateRange}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Time Range" />
@@ -441,7 +417,7 @@ export default function PortfolioPage() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Gas Spent</p>
                     <p className="text-2xl font-bold">
-                      {portfolioData?.totalGasUsed ? `${(portfolioData.totalGasUsed / 1e18).toFixed(4)} ETH` : "0 ETH"}
+                      {portfolioData?.totalGasSpent ? `${(portfolioData.totalGasSpent / 1e18).toFixed(4)} ETH` : "0 ETH"}
                     </p>
                   </div>
                   <Fuel className="h-8 w-8 text-orange-500" />

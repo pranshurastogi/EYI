@@ -1,19 +1,25 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { motion } from "framer-motion"
+import type React from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CheckCircle2, Loader2, Megaphone, Network, Sparkles, Wrench, Star } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { ENSTextRecordsCompact } from "@/components/ens/ens-text-records-display"
-import { usePlatformTextRecord } from "@/hooks/use-ens-text-records"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Loader2, Megaphone, Network, Sparkles, Wrench, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ENSTextRecordsCompact } from "@/components/ens/ens-text-records-display";
+import { usePlatformTextRecord } from "@/hooks/use-ens-text-records";
 
-type Type = "spark" | "build" | "voice" | "web"
-type State = "idle" | "verifying" | "verified" | "expired"
+import VerifyWithSelf from "@/components/self/verify-with-self";
 
-const copy: Record<Type, { title: string; blurb: string; cta: string; icon: React.ReactNode; tooltip: string }> = {
+type Type = "spark" | "build" | "voice" | "web";
+type State = "idle" | "verifying" | "verified" | "expired";
+
+const copy: Record<
+  Type,
+  { title: string; blurb: string; cta: string; icon: React.ReactNode; tooltip: string }
+> = {
   spark: {
     title: "Spark (Self)",
     blurb: "Prove personhood privately. Stores no PII; issues blockchain proof.",
@@ -42,7 +48,7 @@ const copy: Record<Type, { title: string; blurb: string; cta: string; icon: Reac
     icon: <Network className="size-5 text-(--eyi-primary)" aria-hidden />,
     tooltip: "Link your Farcaster fid to this address",
   },
-}
+};
 
 export function PowerCard({
   type,
@@ -54,95 +60,42 @@ export function PowerCard({
   ctaText,
   ensName,
 }: {
-  type: Type
-  state?: State
-  onAction?: () => void
-  className?: string
-  uid?: string
-  updatedAt?: string
-  ctaText?: string
-  ensName?: string
+  type: Type;
+  state?: State;
+  onAction?: () => void;
+  className?: string;
+  uid?: string;
+  updatedAt?: string;
+  ctaText?: string;
+  ensName?: string;
 }) {
-  const c = copy[type]
-  const isVerified = state === "verified"
-  const isVerifying = state === "verifying"
-  
-  // Get ENS text record for this platform
-  const platform = type === 'build' ? 'github' : type === 'voice' ? 'twitter' : type === 'web' ? 'farcaster' : undefined
-  const { hasRecord: hasENSRecord } = usePlatformTextRecord(ensName, platform)
-  
-  
-  // Add some visual feedback based on state
-  
-  return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card className={cn(
-        "bg-card/70 border-border/60 group relative overflow-hidden transition-all duration-300",
-        isVerified && "border-var(--eyi-mint)/40 shadow-lg shadow-var(--eyi-mint)/10",
-        isVerifying && "border-var(--eyi-primary)/40",
-        className
-      )}>
-        {/* Animated background gradient for verified cards */}
-        {isVerified && (
-          <motion.div
-            className="absolute inset-0 opacity-10"
-            style={{
-              background: "linear-gradient(45deg, var(--eyi-mint), var(--eyi-primary))",
-            }}
-            animate={{
-              background: [
-                "linear-gradient(45deg, var(--eyi-mint), var(--eyi-primary))",
-                "linear-gradient(225deg, var(--eyi-primary), var(--eyi-mint))",
-                "linear-gradient(45deg, var(--eyi-mint), var(--eyi-primary))",
-              ],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        )}
-        
-        {/* Subtle glow effect */}
-        <div className={cn(
-          "absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-          isVerified && "bg-gradient-to-br from-var(--eyi-mint)/5 to-var(--eyi-primary)/5"
-        )} />
+  const c = copy[type];
+  const isVerified = state === "verified";
+  const isVerifying = state === "verifying";
+  const [showVerify, setShowVerify] = useState(false);
 
+  const platform =
+    type === "build" ? "github" : type === "voice" ? "twitter" : type === "web" ? "farcaster" : undefined;
+  const { hasRecord: hasENSRecord } = usePlatformTextRecord(ensName, platform);
+
+  // Self config (seed only; SDK v1.0.15)
+  const CONTRACT = "0xE85B8De9B56d8ce4fCdF0cd7D5B083F7d92b4459".toLowerCase();
+  const SCOPE_SEED = "self-ens";
+
+  return (
+    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+      <Card className={cn("bg-card/70 border-border/60 group relative overflow-hidden transition-all duration-300", className)}>
         <CardHeader className="space-y-1 relative z-10">
           <div className="flex items-center gap-2">
-            <motion.div
-              animate={isVerified ? { 
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0]
-              } : {}}
-              transition={{
-                duration: 2,
-                repeat: isVerified ? Infinity : 0,
-                ease: "easeInOut"
-              }}
-            >
-              {c.icon}
-            </motion.div>
+            {c.icon}
             <CardTitle className="text-base flex items-center gap-1">
               {c.title}
-              {isVerified && (
-                <CheckCircle2 className="size-4 text-(--eyi-mint)" aria-label="Verified" />
-              )}
+              {isVerified && <CheckCircle2 className="size-4 text-(--eyi-mint)" aria-label="Verified" />}
               {hasENSRecord && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                  className="flex items-center gap-1"
-                >
+                <div className="flex items-center gap-1">
                   <Star className="size-3 text-var(--eyi-mint)" />
                   <span className="text-xs text-var(--eyi-mint) font-medium">ENS</span>
-                </motion.div>
+                </div>
               )}
             </CardTitle>
           </div>
@@ -190,23 +143,41 @@ export function PowerCard({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Button 
-              size="sm" 
-              onClick={onAction} 
-              disabled={state === "verifying"} 
-              className={cn(
-                "gap-2 transition-all duration-200",
-                isVerified && "bg-var(--eyi-mint) hover:bg-var(--eyi-mint)/90 text-white",
-                isVerifying && "bg-var(--eyi-primary) hover:bg-var(--eyi-primary)/90"
-              )}
-              aria-label={ctaText ?? c.cta}
-            >
-              {state === "verifying" && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {ctaText ?? c.cta}
-            </Button>
+            {type === "spark" ? (
+              showVerify ? (
+                <VerifyWithSelf
+                  active={true}
+                  contract={CONTRACT}
+                  scopeSeed={SCOPE_SEED}
+                />
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => setShowVerify(true)}
+                  className="gap-2 transition-all duration-200"
+                >
+                  {ctaText ?? c.cta}
+                </Button>
+              )
+            ) : (
+              <Button 
+                size="sm" 
+                onClick={onAction} 
+                disabled={state === "verifying"} 
+                className={cn(
+                  "gap-2 transition-all duration-200",
+                  isVerified && "bg-var(--eyi-mint) hover:bg-var(--eyi-mint)/90 text-white",
+                  isVerifying && "bg-var(--eyi-primary) hover:bg-var(--eyi-primary)/90"
+                )}
+                aria-label={ctaText ?? c.cta}
+              >
+                {state === "verifying" && <Loader2 className="size-4 animate-spin" aria-hidden />}
+                {ctaText ?? c.cta}
+              </Button>
+            )}
           </motion.div>
         </CardContent>
       </Card>
     </motion.div>
-  )
+  );
 }

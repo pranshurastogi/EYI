@@ -10,6 +10,7 @@ import { ENSRegistrationPopup } from "@/components/ens/ens-registration-popup"
 import { ENSStatusIndicator } from "@/components/ens/ens-status-indicator"
 import { HowItWorksSection } from "@/components/how-it-works/how-it-works-section"
 import { useENSIntegration } from "@/hooks/use-ens-integration"
+import { useSocialVerification } from "@/hooks/use-social-verification"
 import { ArrowRight, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -46,6 +47,9 @@ export default function HomePage() {
     hideRegistrationPopup,
     redirectToENS,
   } = useENSIntegration(connectedAddress)
+
+  // Social Verification
+  const { verifyAndUpdatePlatform, getPlatformStatus } = useSocialVerification(ensName || undefined)
 
   function shortAddr(addr?: string) {
     if (!addr) return ""
@@ -324,12 +328,14 @@ export default function HomePage() {
               state={buildLinked ? "verified" : "idle"}
               uid={buildHandle}
               ctaText={buildLinked ? "Disconnect" : "Connect GitHub"}
-              onAction={() => {
+              ensName={ensName || undefined}
+              onAction={async () => {
                 if (buildLinked && user?.github?.subject) {
                   unlinkGithub(user.github.subject)
                 } else {
-                  if (authenticated) {
-                    linkGithub()
+                  if (authenticated && ensName) {
+                    // Use new verification system
+                    await verifyAndUpdatePlatform('github')
                   } else {
                     loginWith('github')
                   }
@@ -349,12 +355,14 @@ export default function HomePage() {
               state={voiceLinked ? "verified" : "idle"}
               uid={voiceHandle}
               ctaText={voiceLinked ? "Disconnect" : "Connect X"}
-              onAction={() => {
+              ensName={ensName || undefined}
+              onAction={async () => {
                 if (voiceLinked && user?.twitter?.subject) {
                   unlinkTwitter(user.twitter.subject)
                 } else {
-                  if (authenticated) {
-                    linkTwitter()
+                  if (authenticated && ensName) {
+                    // Use new verification system
+                    await verifyAndUpdatePlatform('twitter')
                   } else {
                     loginWith('twitter')
                   }
@@ -374,13 +382,14 @@ export default function HomePage() {
               state={webLinked ? "verified" : "idle"}
               uid={webHandle}
               ctaText={webLinked ? "Disconnect" : "Connect Farcaster"}
-              onAction={() => {
+              ensName={ensName || undefined}
+              onAction={async () => {
                 if (webLinked && typeof user?.farcaster?.fid === "number") {
                   unlinkFarcaster(user.farcaster.fid)
                 } else {
-                  if (authenticated) {
-                    // Farcaster linking uses a Privy modal to set up a signer
-                    linkFarcaster()
+                  if (authenticated && ensName) {
+                    // Use new verification system
+                    await verifyAndUpdatePlatform('farcaster')
                   } else {
                     // Skip method chooser; open Farcaster path in the modal directly
                     loginWith('farcaster')

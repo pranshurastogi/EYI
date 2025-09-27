@@ -46,6 +46,17 @@ const PUBLIC_RESOLVER_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "node", "type": "bytes32" },
+      { "internalType": "string", "name": "key", "type": "string" },
+      { "internalType": "string", "name": "value", "type": "string" }
+    ],
+    "name": "setText",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]
 
@@ -149,6 +160,132 @@ export async function getENSAvatar(
   } catch (error) {
     console.error('Error getting ENS avatar:', error)
     return null
+  }
+}
+
+/**
+ * Get ENS text record for a name
+ */
+export async function getENSTextRecord(
+  name: string,
+  key: string,
+  wallet?: any
+): Promise<string | null> {
+  try {
+    const provider = getProvider()
+    const contract = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, provider)
+    
+    // Get the namehash for the name
+    const node = namehash(name)
+    
+    // Get the resolver
+    const resolverAddress = await contract.resolver(node)
+    
+    if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+      return null
+    }
+    
+    // Get the text record from the resolver
+    const resolver = new ethers.Contract(resolverAddress, PUBLIC_RESOLVER_ABI, provider)
+    const textRecord = await resolver.text(node, key)
+    
+    return textRecord && textRecord.length > 0 ? textRecord : null
+  } catch (error) {
+    console.error('Error getting ENS text record:', error)
+    return null
+  }
+}
+
+/**
+ * Get multiple ENS text records for a name
+ */
+export async function getENSTextRecords(
+  name: string,
+  keys: string[],
+  wallet?: any
+): Promise<Record<string, string | null>> {
+  const records: Record<string, string | null> = {}
+  
+  try {
+    const provider = getProvider()
+    const contract = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, provider)
+    
+    // Get the namehash for the name
+    const node = namehash(name)
+    
+    // Get the resolver
+    const resolverAddress = await contract.resolver(node)
+    
+    if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+      // No resolver set, return null for all keys
+      keys.forEach(key => records[key] = null)
+      return records
+    }
+    
+    // Get all text records in parallel
+    const resolver = new ethers.Contract(resolverAddress, PUBLIC_RESOLVER_ABI, provider)
+    const promises = keys.map(async (key) => {
+      try {
+        const value = await resolver.text(node, key)
+        return { key, value: value && value.length > 0 ? value : null }
+      } catch (error) {
+        console.error(`Error getting text record for key ${key}:`, error)
+        return { key, value: null }
+      }
+    })
+    
+    const results = await Promise.all(promises)
+    results.forEach(({ key, value }) => {
+      records[key] = value
+    })
+    
+    return records
+  } catch (error) {
+    console.error('Error getting ENS text records:', error)
+    keys.forEach(key => records[key] = null)
+    return records
+  }
+}
+
+/**
+ * Set ENS text record (requires wallet connection)
+ */
+export async function setENSTextRecord(
+  name: string,
+  key: string,
+  value: string,
+  wallet: any
+): Promise<boolean> {
+  try {
+    if (!wallet) {
+      throw new Error('Wallet connection required to set text records')
+    }
+
+    const provider = getProvider()
+    const contract = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, provider)
+    
+    // Get the namehash for the name
+    const node = namehash(name)
+    
+    // Get the resolver
+    const resolverAddress = await contract.resolver(node)
+    
+    if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+      throw new Error('No resolver set for this ENS name')
+    }
+    
+    // Connect wallet to provider
+    const signer = wallet.connect(provider)
+    const resolver = new ethers.Contract(resolverAddress, PUBLIC_RESOLVER_ABI, signer)
+    
+    // Set the text record
+    const tx = await resolver.setText(node, key, value)
+    await tx.wait()
+    
+    return true
+  } catch (error) {
+    console.error('Error setting ENS text record:', error)
+    return false
   }
 }
 

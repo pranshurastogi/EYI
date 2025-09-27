@@ -228,10 +228,20 @@ export function usePortfolioData(address?: string) {
 
     try {
       const response = await fetchTransactions(address, selectedNetwork, 25)
+      console.log('API Response:', response)
+      console.log('Transaction count:', response.transactions?.length || 0)
+      
       setTransactions(response.transactions)
       
       const processedData = processPortfolioData(response.transactions)
+      console.log('Processed portfolio data:', processedData)
       setPortfolioData(processedData)
+      
+      // If no transactions found, show a message
+      if (!response.transactions || response.transactions.length === 0) {
+        console.log('No transactions found for this address')
+        setError('No transactions found for this address. Try a different network or check if the address has transaction history.')
+      }
     } catch (err) {
       console.error('Portfolio data fetch error:', err)
       

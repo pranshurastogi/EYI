@@ -5,8 +5,10 @@ import { motion } from "framer-motion"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Loader2, Megaphone, Network, Sparkles, Wrench } from "lucide-react"
+import { CheckCircle2, Loader2, Megaphone, Network, Sparkles, Wrench, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ENSTextRecordsCompact } from "@/components/ens/ens-text-records-display"
+import { usePlatformTextRecord } from "@/hooks/use-ens-text-records"
 
 type Type = "spark" | "build" | "voice" | "web"
 type State = "idle" | "verifying" | "verified" | "expired"
@@ -50,6 +52,7 @@ export function PowerCard({
   uid,
   updatedAt,
   ctaText,
+  ensName,
 }: {
   type: Type
   state?: State
@@ -58,10 +61,16 @@ export function PowerCard({
   uid?: string
   updatedAt?: string
   ctaText?: string
+  ensName?: string
 }) {
   const c = copy[type]
   const isVerified = state === "verified"
   const isVerifying = state === "verifying"
+  
+  // Get ENS text record for this platform
+  const platform = type === 'build' ? 'github' : type === 'voice' ? 'twitter' : type === 'web' ? 'farcaster' : undefined
+  const { hasRecord: hasENSRecord } = usePlatformTextRecord(ensName, platform)
+  
   
   // Add some visual feedback based on state
   
@@ -124,34 +133,52 @@ export function PowerCard({
               {isVerified && (
                 <CheckCircle2 className="size-4 text-(--eyi-mint)" aria-label="Verified" />
               )}
+              {hasENSRecord && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                  className="flex items-center gap-1"
+                >
+                  <Star className="size-3 text-var(--eyi-mint)" />
+                  <span className="text-xs text-var(--eyi-mint) font-medium">ENS</span>
+                </motion.div>
+              )}
             </CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">{c.blurb}</p>
         </CardHeader>
         
         <CardContent className="flex items-center justify-between relative z-10">
-          <div className="text-xs text-muted-foreground">
-            {state === "verified" && uid ? (
-              <motion.span 
-                className="text-var(--eyi-mint) font-medium"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                ✓ Verified • {uid}
-                {updatedAt ? ` • ${updatedAt}` : ""}
-              </motion.span>
-            ) : state === "expired" ? (
-              <span className="text-var(--destructive)">⚠ Expired — renew to keep your power active</span>
-            ) : state === "verifying" ? (
-              <motion.span
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                Verifying…
-              </motion.span>
-            ) : (
-              <span>Not started</span>
+          <div className="flex flex-col gap-2">
+            <div className="text-xs text-muted-foreground">
+              {state === "verified" && uid ? (
+                <motion.span 
+                  className="text-var(--eyi-mint) font-medium"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  ✓ Verified • {uid}
+                  {updatedAt ? ` • ${updatedAt}` : ""}
+                </motion.span>
+              ) : state === "expired" ? (
+                <span className="text-var(--destructive)">⚠ Expired — renew to keep your power active</span>
+              ) : state === "verifying" ? (
+                <motion.span
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  Verifying…
+                </motion.span>
+              ) : (
+                <span>Not started</span>
+              )}
+            </div>
+            
+            {/* Show ENS text records if available */}
+            {ensName && platform && (
+              <ENSTextRecordsCompact ensName={ensName} className="text-xs" />
             )}
           </div>
           

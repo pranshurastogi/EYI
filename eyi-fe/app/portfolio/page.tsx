@@ -37,7 +37,119 @@ import { TransactionHistory } from "@/components/portfolio/transaction-history"
 import { PortfolioCharts } from "@/components/portfolio/portfolio-charts"
 import { PortfolioAnalytics } from "@/components/portfolio/portfolio-analytics"
 import { ENSProfile } from "@/components/ens/ens-profile"
+import { ENSTextRecordsSection } from "@/components/ens/ens-text-records-section"
 import { usePortfolioData } from "@/hooks/use-portfolio-data"
+import { useENSIntegration } from "@/hooks/use-ens-integration"
+
+// Helper function for demo data
+const generateMockTransactions = (address: string) => {
+  const mockTxs = []
+  const now = Date.now()
+  
+  for (let i = 0; i < 20; i++) {
+    const timestamp = now - (i * 24 * 60 * 60 * 1000) // One day apart
+    mockTxs.push({
+      network: 'eth-mainnet',
+      hash: `0x${Math.random().toString(16).substr(2, 64)}`,
+      timeStamp: Math.floor(timestamp / 1000).toString(),
+      blockNumber: 18000000 + i,
+      blockHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+      nonce: i,
+      transactionIndex: i,
+      fromAddress: address,
+      toAddress: `0x${Math.random().toString(16).substr(2, 40)}`,
+      contractAddress: Math.random() > 0.5 ? `0x${Math.random().toString(16).substr(2, 40)}` : undefined,
+      value: (Math.random() * 0.1 * 1e18).toString(),
+      cumulativeGasUsed: '21000',
+      effectiveGasPrice: (20 + Math.random() * 10).toString() + '000000000', // 20-30 Gwei
+      gasUsed: '21000',
+      logs: [],
+      internalTxns: []
+    })
+  }
+  
+  return mockTxs
+}
+
+const processPortfolioData = (transactions: any[]) => {
+  const totalTransactions = transactions.length
+  const totalGasUsed = transactions.reduce((sum, tx) => sum + parseInt(tx.gasUsed), 0)
+  const totalGasSpent = transactions.reduce((sum, tx) => {
+    const gasPrice = parseInt(tx.effectiveGasPrice)
+    const gasUsed = parseInt(tx.gasUsed)
+    return sum + (gasPrice * gasUsed)
+  }, 0)
+  
+  const networks = [...new Set(transactions.map(tx => tx.network))]
+  const successfulTxs = transactions.filter(tx => !tx.internalTxns.some((internal: any) => internal.error))
+  const successRate = totalTransactions > 0 ? successfulTxs.length / totalTransactions : 0
+  
+  const averageGasPrice = totalTransactions > 0 ? 
+    transactions.reduce((sum, tx) => sum + parseInt(tx.effectiveGasPrice), 0) / totalTransactions : 0
+
+  // Count contract interactions
+  const contractCounts = new Map()
+  transactions.forEach(tx => {
+    if (tx.contractAddress) {
+      const count = contractCounts.get(tx.contractAddress) || 0
+      contractCounts.set(tx.contractAddress, count + 1)
+    }
+  })
+
+  const topContracts = Array.from(contractCounts.entries())
+    .map(([address, count]) => ({
+      address,
+      name: getContractName(address),
+      count
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+
+  // Monthly stats
+  const monthlyStats = getMonthlyStats(transactions)
+
+  return {
+    totalTransactions,
+    totalGasUsed,
+    totalGasSpent,
+    networks,
+    successRate,
+    averageGasPrice,
+    topContracts,
+    monthlyStats
+  }
+}
+
+const getContractName = (address: string): string => {
+  const contractNames: Record<string, string> = {
+    '0xA0b86a33E6441b8C4C8C0C4C0C4C0C4C0C4C0C4C': 'Uniswap V3',
+    '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D': 'Uniswap V2',
+    '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984': 'UNI Token',
+    '0xdAC17F958D2ee523a2206206994597C13D831ec': 'USDT',
+    '0xA0b86a33E6441b8C4C8C0C4C0C4C0C4C0C4C0C4D': 'USDC',
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F': 'DAI',
+  }
+  return contractNames[address] || `${address.slice(0, 6)}...${address.slice(-4)}`
+}
+
+const getMonthlyStats = (transactions: any[]) => {
+  const monthlyData = new Map()
+  
+  transactions.forEach(tx => {
+    const date = new Date(parseInt(tx.timeStamp) * 1000)
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    
+    const existing = monthlyData.get(monthKey) || { transactions: 0, gasUsed: 0, volume: 0 }
+    existing.transactions += 1
+    existing.gasUsed += parseInt(tx.gasUsed)
+    existing.volume += parseInt(tx.value)
+    monthlyData.set(monthKey, existing)
+  })
+
+  return Array.from(monthlyData.entries())
+    .map(([month, data]) => ({ month, ...data }))
+    .sort((a, b) => a.month.localeCompare(b.month))
+}
 
 export default function PortfolioPage() {
   const { user, authenticated, login } = usePrivy()
@@ -66,6 +178,14 @@ export default function PortfolioPage() {
     searchQuery,
     setSearchQuery
   } = usePortfolioData(connectedAddress)
+
+  // ENS Integration
+  const {
+    hasENS,
+    ensName,
+    isLoading: ensLoading,
+    error: ensError,
+  } = useENSIntegration(connectedAddress)
 
   const [activeTab, setActiveTab] = useState("overview")
   const [showPrivateData, setShowPrivateData] = useState(false)
@@ -233,6 +353,18 @@ export default function PortfolioPage() {
                 className="gap-2"
               >
                 Test API Key
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Force refresh data
+                  refreshData()
+                }}
+                className="gap-2"
+              >
+                Refresh Data
               </Button>
               
               <ENSProfile address={connectedAddress} size="sm" showAddress={false} />
@@ -413,6 +545,18 @@ export default function PortfolioPage() {
               isLoading={isLoading}
               showPrivateData={showPrivateData}
             />
+            
+            {/* ENS Text Records Section */}
+            {ensName && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <ENSTextRecordsSection ensName={ensName} />
+              </motion.div>
+            )}
+            
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-6">

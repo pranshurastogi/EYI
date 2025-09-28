@@ -1,4 +1,6 @@
 import { DirectoryTable } from "@/components/eyi/directory-table"
+import { UserAccountDetails } from "@/components/eyi/user-account-details"
+import { HomographAnalysis } from "@/components/eyi/homograph-analysis"
 
 export default function DirectoryPage() {
   return (
@@ -10,9 +12,27 @@ export default function DirectoryPage() {
         </p>
       </header>
 
-      <section className="eyi-glass rounded-xl p-4 md:p-6">
-        <DirectoryTable />
-      </section>
+      <div className="space-y-6">
+        {/* User Account Details Section */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Your Account</h2>
+          <UserAccountDetails />
+        </section>
+
+        {/* Directory Table Section */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Directory</h2>
+          <div className="eyi-glass rounded-xl p-4 md:p-6">
+            <DirectoryTable />
+          </div>
+        </section>
+
+        {/* Homograph Risk Analysis Section */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Security Analysis</h2>
+          <HomographAnalysis />
+        </section>
+      </div>
     </main>
   )
 }

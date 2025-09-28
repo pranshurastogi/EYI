@@ -152,13 +152,29 @@ export function PowerCard({
               )}
             </div>
             
-            {/* Show ENS text records if available */}
+            {/* Show ENS text records if available or prompt to add missing ones */}
             {ensName && platform && (
-              <ENSTextRecordsCompact 
-                ensName={ensName} 
-                platform={platform}
-                className="text-xs" 
-              />
+              <div className="space-y-2">
+                <ENSTextRecordsCompact 
+                  ensName={ensName} 
+                  platform={platform}
+                  className="text-xs" 
+                />
+                {/* Show prompt to add missing ENS record */}
+                {!hasENSRecord && isVerified && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-md"
+                  >
+                    <div className="size-2 rounded-full bg-amber-400" />
+                    <span className="text-xs text-amber-700">
+                      Add to ENS to complete verification
+                    </span>
+                  </motion.div>
+                )}
+              </div>
             )}
           </div>
           
@@ -192,12 +208,14 @@ export function PowerCard({
                 className={cn(
                   "gap-2 transition-all duration-200",
                   isVerified && "bg-var(--eyi-mint) hover:bg-var(--eyi-mint)/90 text-white",
-                  isVerifying && "bg-var(--eyi-primary) hover:bg-var(--eyi-primary)/90"
+                  isVerifying && "bg-var(--eyi-primary) hover:bg-var(--eyi-primary)/90",
+                  // Highlight when ENS record is missing
+                  isVerified && !hasENSRecord && ensName && "ring-2 ring-amber-400 ring-opacity-50"
                 )}
                 aria-label={ctaText ?? c.cta}
               >
                 {state === "verifying" && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                {ctaText ?? c.cta}
+                {isVerified && !hasENSRecord && ensName ? "Add to ENS" : (ctaText ?? c.cta)}
               </Button>
             )}
           </motion.div>

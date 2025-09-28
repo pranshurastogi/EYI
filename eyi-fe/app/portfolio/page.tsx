@@ -319,7 +319,7 @@ export default function PortfolioPage() {
                 {showPrivateData ? "Hide" : "Show"} Private Data
               </Button>
               
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={refreshData}
@@ -328,9 +328,9 @@ export default function PortfolioPage() {
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
-              </Button>
+              </Button> */}
               
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -344,9 +344,9 @@ export default function PortfolioPage() {
                 className="gap-2"
               >
                 Test API Key
-              </Button>
+              </Button> */}
               
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -356,7 +356,7 @@ export default function PortfolioPage() {
                 className="gap-2"
               >
                 Refresh Data
-              </Button>
+              </Button> */}
               
               <ENSProfile address={connectedAddress} size="sm" showAddress={false} />
             </div>

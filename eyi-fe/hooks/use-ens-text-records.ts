@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getENSTextRecords, setENSTextRecord } from '@/lib/ens'
+import { getENSTextRecords, setENSTextRecord, setENSTextRecordWithSigner, buildSetTextTransaction } from '@/lib/ens'
 import { ensLogger } from '@/lib/logger'
+import { usePrivy } from '@privy-io/react-auth'
+import { ethers } from 'ethers'
 
 // Standard ENS text record keys for social platforms
 export const ENS_TEXT_RECORD_KEYS = {
@@ -78,17 +80,46 @@ export function useENSTextRecords(ensName?: string, wallet?: any): ENSTextRecord
     }
   }, [ensName])
 
+  const { sendTransaction, authenticated, ready, user } = usePrivy()
+
   const updateTextRecord = useCallback(async (key: string, value: string): Promise<boolean> => {
-    if (!ensName || !wallet) {
-      console.error('ENS name and wallet required to update text records')
+    if (!ensName) {
+      console.error('ENS name required to update text records')
       return false
     }
 
     try {
-      const success = await setENSTextRecord(ensName, key, value, wallet)
-      
+      let success = false
+
+      if (wallet) {
+        // Path 1: explicit wallet provided (ethers.js Wallet)
+        success = await setENSTextRecord(ensName, key, value, wallet)
+      } else {
+        // Path 2: try Privy embedded wallet first
+        try {
+          const { to, data } = await buildSetTextTransaction(ensName, key, value)
+          // chainId 1 (Ethereum mainnet) for ENS
+          await sendTransaction({ to, data, chainId: 1 })
+          success = true
+        } catch (e) {
+          // Path 3: fallback to injected browser wallet (e.g., MetaMask)
+          if (typeof window !== 'undefined' && (window as any).ethereum) {
+            try {
+              const provider = new ethers.BrowserProvider((window as any).ethereum)
+              const signer = await provider.getSigner()
+              success = await setENSTextRecordWithSigner(ensName, key, value, signer)
+            } catch (ie) {
+              console.error('Injected wallet update failed:', ie)
+              success = false
+            }
+          } else {
+            success = false
+          }
+        }
+      }
+
       if (success) {
-        // Update local state
+        // Update local state immediately
         setRecords(prev => ({
           ...prev,
           [key]: {
@@ -97,10 +128,9 @@ export function useENSTextRecords(ensName?: string, wallet?: any): ENSTextRecord
             verified: true
           }
         }))
-        
         ensLogger.connectionSuccess(ensName, `text record ${key} updated`)
       }
-      
+
       return success
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to update ENS text record')
@@ -108,7 +138,7 @@ export function useENSTextRecords(ensName?: string, wallet?: any): ENSTextRecord
       ensLogger.connectionFailed(ensName, error)
       return false
     }
-  }, [ensName, wallet])
+  }, [ensName, wallet, sendTransaction])
 
   const refreshRecords = useCallback(async () => {
     await fetchTextRecords()

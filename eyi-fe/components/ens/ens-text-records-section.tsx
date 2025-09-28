@@ -57,7 +57,7 @@ const PLATFORM_CONFIG = {
 
 export function ENSTextRecordsSection({ ensName, className }: ENSTextRecordsSectionProps) {
   const { records, isLoading, error, hasRecords, refreshRecords } = useENSTextRecords(ensName)
-  const { verifyAndUpdatePlatform, state } = useSocialVerification(ensName)
+  const { verifyAndUpdatePlatform, state, getPlatformStatus } = useSocialVerification(ensName)
 
   const handleVerifyPlatform = async (platform: 'github' | 'twitter' | 'farcaster') => {
     try {
@@ -219,7 +219,10 @@ export function ENSTextRecordsSection({ ensName, className }: ENSTextRecordsSect
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-muted-foreground">Add More Records</h4>
             <div className="grid gap-2">
-              {unverifiedPlatforms.map(([key, config]) => (
+              {unverifiedPlatforms.map(([key, config]) => {
+                const status = getPlatformStatus(config.platform)
+                const isLinked = !!status.connected
+                return (
                 <motion.div
                   key={key}
                   initial={{ opacity: 0, y: 10 }}
@@ -240,7 +243,9 @@ export function ENSTextRecordsSection({ ensName, className }: ENSTextRecordsSect
                       {config.label}
                     </span>
                     <p className="text-xs text-muted-foreground">
-                      Connect your {config.label} account to add it to your ENS profile
+                      {isLinked
+                        ? `Linked as @${status.handle || ''}. Add to ENS.`
+                        : `Connect your ${config.label} account to add it to your ENS profile`}
                     </p>
                   </div>
                   
@@ -256,10 +261,10 @@ export function ENSTextRecordsSection({ ensName, className }: ENSTextRecordsSect
                     ) : (
                       <Plus className="size-3" />
                     )}
-                    Connect
+                    {isLinked ? 'Add to ENS' : 'Connect'}
                   </Button>
                 </motion.div>
-              ))}
+              )})}
             </div>
           </div>
         )}

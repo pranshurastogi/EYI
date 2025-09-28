@@ -189,10 +189,9 @@ export function usePortfolioData(address?: string) {
       console.log('Processed portfolio data:', processedData)
       setPortfolioData(processedData)
       
-      // If no transactions found, show a message
+      // If no transactions found, do not surface as an error. Show empty state.
       if (!response.transactions || response.transactions.length === 0) {
         console.log('No transactions found for this address')
-        setError('No transactions found for this address. Try a different network or check if the address has transaction history.')
       }
     } catch (err) {
       console.error('Portfolio data fetch error:', err)

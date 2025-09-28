@@ -58,34 +58,28 @@ export function useSocialVerification(ensName?: string) {
       switch (platform) {
         case 'github':
           if (!user?.github?.username) {
-            await linkGithub()
-            // Wait for the user object to update
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            if (!user?.github?.username) {
-              throw new Error('GitHub authentication failed')
-            }
+            // Initiates redirect/flow; do not block waiting on state
+            linkGithub()
+            setState(prev => ({ ...prev, isVerifying: false }))
+            return { platform, handle: '', verified: false, ensUpdated: false }
           }
           handle = user.github.username
           break
           
         case 'twitter':
           if (!user?.twitter?.username) {
-            await linkTwitter()
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            if (!user?.twitter?.username) {
-              throw new Error('Twitter authentication failed')
-            }
+            linkTwitter()
+            setState(prev => ({ ...prev, isVerifying: false }))
+            return { platform, handle: '', verified: false, ensUpdated: false }
           }
           handle = user.twitter.username
           break
           
         case 'farcaster':
           if (!user?.farcaster?.username) {
-            await linkFarcaster()
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            if (!user?.farcaster?.username) {
-              throw new Error('Farcaster authentication failed')
-            }
+            linkFarcaster()
+            setState(prev => ({ ...prev, isVerifying: false }))
+            return { platform, handle: '', verified: false, ensUpdated: false }
           }
           handle = user.farcaster.username
           break

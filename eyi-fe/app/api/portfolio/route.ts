@@ -164,42 +164,88 @@ export async function GET(request: Request) {
       tokenByHash.get(t.hash)!.push(t)
     }
 
-    // Map to frontend Transaction shape
-    const transactions = normalTxs.map((tx) => {
-      const internal = internalsByHash.get(tx.hash) || []
-      const tokenEvents = tokenByHash.get(tx.hash) || []
-      const inferredContract = tx.contractAddress && tx.contractAddress !== '' ? tx.contractAddress : (tokenEvents[0]?.contractAddress || undefined)
+    // Build a unified set of hashes from normal, token, and internal txs
+    const normalByHash = new Map<string, NormalTx>(normalTxs.map(t => [t.hash, t]))
+    const allHashes = new Set<string>()
+    normalTxs.forEach(t => allHashes.add(t.hash))
+    tokenTxs.forEach(t => allHashes.add(t.hash))
+    internalTxs.forEach(i => { if (i.hash) allHashes.add(i.hash) })
 
-      return {
-        network,
-        hash: tx.hash,
-        timeStamp: tx.timeStamp,
-        blockNumber: Number(tx.blockNumber),
-        blockHash: tx.blockHash,
-        nonce: Number(tx.nonce),
-        transactionIndex: Number(tx.transactionIndex),
-        fromAddress: tx.from,
-        toAddress: tx.to,
-        contractAddress: inferredContract,
-        value: tx.value,
-        cumulativeGasUsed: tx.cumulativeGasUsed || '0',
-        effectiveGasPrice: tx.gasPrice || '0',
-        gasUsed: tx.gasUsed || tx.gas || '0',
-        logs: [],
-        internalTxns: internal.map((i) => ({
-          type: i.type || 'call',
-          fromAddress: i.from,
-          toAddress: i.to,
-          value: i.value,
-          gas: i.gas,
-          gasUsed: i.gasUsed || '0',
-          input: i.input || '',
-          output: '',
-          error: i.isError === '1' ? (i.errCode || 'error') : undefined,
-          revertReason: undefined,
-        })),
+    // Map to frontend Transaction shape with fallback when no normal tx exists
+    const transactions = Array.from(allHashes).map((hash) => {
+      const base = normalByHash.get(hash)
+      const internal = internalsByHash.get(hash) || []
+      const tokenEvents = tokenByHash.get(hash) || []
+
+      if (base) {
+        const inferredContract = base.contractAddress && base.contractAddress !== '' ? base.contractAddress : (tokenEvents[0]?.contractAddress || undefined)
+        return {
+          network,
+          hash: base.hash,
+          timeStamp: base.timeStamp,
+          blockNumber: Number(base.blockNumber),
+          blockHash: base.blockHash,
+          nonce: Number(base.nonce),
+          transactionIndex: Number(base.transactionIndex),
+          fromAddress: base.from,
+          toAddress: base.to,
+          contractAddress: inferredContract,
+          value: base.value,
+          cumulativeGasUsed: base.cumulativeGasUsed || '0',
+          effectiveGasPrice: base.gasPrice || '0',
+          gasUsed: base.gasUsed || base.gas || '0',
+          logs: [],
+          internalTxns: internal.map((i) => ({
+            type: i.type || 'call',
+            fromAddress: i.from,
+            toAddress: i.to,
+            value: i.value,
+            gas: i.gas,
+            gasUsed: i.gasUsed || '0',
+            input: i.input || '',
+            output: '',
+            error: i.isError === '1' ? (i.errCode || 'error') : undefined,
+            revertReason: undefined,
+          })),
+        }
+      } else {
+        const t = tokenEvents[0]
+        const ts = t?.timeStamp || internal[0]?.timeStamp || `${Math.floor(Date.now() / 1000)}`
+        const blockNumber = t?.blockNumber ? Number(t.blockNumber) : 0
+        const from = t?.from || internal[0]?.from || '0x'
+        const to = t?.to || internal[0]?.to || '0x'
+        const contractAddress = t?.contractAddress || undefined
+        return {
+          network,
+          hash,
+          timeStamp: ts,
+          blockNumber,
+          blockHash: '',
+          nonce: 0,
+          transactionIndex: 0,
+          fromAddress: from,
+          toAddress: to,
+          contractAddress,
+          value: '0', // unknown ETH value; keep 0 to avoid misleading totals
+          cumulativeGasUsed: '0',
+          effectiveGasPrice: '0',
+          gasUsed: '0',
+          logs: [],
+          internalTxns: internal.map((i) => ({
+            type: i.type || 'call',
+            fromAddress: i.from,
+            toAddress: i.to,
+            value: i.value,
+            gas: i.gas,
+            gasUsed: i.gasUsed || '0',
+            input: i.input || '',
+            output: '',
+            error: i.isError === '1' ? (i.errCode || 'error') : undefined,
+            revertReason: undefined,
+          })),
+        }
       }
-    })
+    }).sort((a, b) => Number(b.timeStamp) - Number(a.timeStamp))
 
     return NextResponse.json({ transactions, totalCount: transactions.length })
   } catch (err: any) {

@@ -95,6 +95,17 @@ function getProvider() {
 }
 
 /**
+ * Resolve resolver address for an ENS name and return namehash node + resolver address
+ */
+export async function getResolverAddressForName(name: string): Promise<{ node: string; resolverAddress: string }> {
+  const provider = getProvider()
+  const contract = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, provider)
+  const node = namehash(name)
+  const resolverAddress: string = await contract.resolver(node)
+  return { node, resolverAddress }
+}
+
+/**
  * Resolve ENS name for an address using standard contract calls
  */
 export async function resolveENSName(
@@ -287,6 +298,55 @@ export async function setENSTextRecord(
     console.error('Error setting ENS text record:', error)
     return false
   }
+}
+
+/**
+ * Set ENS text record using an ethers.js Signer (e.g., from BrowserProvider or injected wallet)
+ */
+export async function setENSTextRecordWithSigner(
+  name: string,
+  key: string,
+  value: string,
+  signer: any
+): Promise<boolean> {
+  try {
+    const provider = getProvider()
+    const registry = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, provider)
+    const node = namehash(name)
+    const resolverAddress = await registry.resolver(node)
+
+    if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+      throw new Error('No resolver set for this ENS name')
+    }
+
+    const resolver = new ethers.Contract(resolverAddress, PUBLIC_RESOLVER_ABI, signer)
+    const tx = await resolver.setText(node, key, value)
+    await tx.wait()
+    return true
+  } catch (error) {
+    console.error('Error setting ENS text record with signer:', error)
+    return false
+  }
+}
+
+/**
+ * Build transaction data for resolver.setText for use with external tx senders (e.g., Privy sendTransaction)
+ */
+export async function buildSetTextTransaction(
+  name: string,
+  key: string,
+  value: string
+): Promise<{ to: string; data: string }> {
+  const provider = getProvider()
+  const registry = new ethers.Contract(ENS_REGISTRY_ADDRESS, ENS_REGISTRY_ABI, provider)
+  const node = namehash(name)
+  const resolverAddress = await registry.resolver(node)
+  if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+    throw new Error('No resolver set for this ENS name')
+  }
+  const iface = new ethers.Interface(PUBLIC_RESOLVER_ABI)
+  const data = iface.encodeFunctionData('setText', [node, key, value])
+  return { to: resolverAddress, data }
 }
 
 /**

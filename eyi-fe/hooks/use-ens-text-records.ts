@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getENSTextRecords, setENSTextRecord, setENSTextRecordWithSigner, buildSetTextTransaction } from '@/lib/ens'
 import { ensLogger } from '@/lib/logger'
+import { emitEnsRecordsUpdated, onEnsRecordsUpdated } from '@/lib/event-bus'
 import { usePrivy } from '@privy-io/react-auth'
 import { ethers } from 'ethers'
 
@@ -129,6 +130,7 @@ export function useENSTextRecords(ensName?: string, wallet?: any): ENSTextRecord
           }
         }))
         ensLogger.connectionSuccess(ensName, `text record ${key} updated`)
+        emitEnsRecordsUpdated({ name: ensName, key })
       }
 
       return success
@@ -147,6 +149,15 @@ export function useENSTextRecords(ensName?: string, wallet?: any): ENSTextRecord
   useEffect(() => {
     fetchTextRecords()
   }, [fetchTextRecords])
+
+  useEffect(() => {
+    const off = onEnsRecordsUpdated((u) => {
+      if (ensName && u.name && u.name.toLowerCase() === ensName.toLowerCase()) {
+        fetchTextRecords()
+      }
+    })
+    return off
+  }, [ensName, fetchTextRecords])
 
   const hasRecords = Object.values(records).some(record => record.verified)
 

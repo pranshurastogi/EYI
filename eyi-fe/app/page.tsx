@@ -379,6 +379,13 @@ export default function HomePage() {
                   }
                 }
               }}
+              onAddToENS={async () => {
+                if (authenticated && ensName) {
+                  await verifyAndUpdatePlatform('github')
+                } else {
+                  loginWith('github')
+                }
+              }}
             />
           </motion.div>
 
@@ -407,6 +414,13 @@ export default function HomePage() {
                   } else {
                     loginWith('twitter')
                   }
+                }
+              }}
+              onAddToENS={async () => {
+                if (authenticated && ensName) {
+                  await verifyAndUpdatePlatform('twitter')
+                } else {
+                  loginWith('twitter')
                 }
               }}
             />
@@ -438,6 +452,13 @@ export default function HomePage() {
                     // Skip method chooser; open Farcaster path in the modal directly
                     loginWith('farcaster')
                   }
+                }
+              }}
+              onAddToENS={async () => {
+                if (authenticated && ensName) {
+                  await verifyAndUpdatePlatform('farcaster')
+                } else {
+                  loginWith('farcaster')
                 }
               }}
             />

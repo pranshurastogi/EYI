@@ -55,6 +55,7 @@ export function PowerCard({
   type,
   state = "idle",
   onAction,
+  onAddToENS,
   className,
   uid,
   updatedAt,
@@ -65,6 +66,7 @@ export function PowerCard({
   type: Type;
   state?: State;
   onAction?: () => void;
+  onAddToENS?: () => void;
   className?: string;
   uid?: string;
   updatedAt?: string;
@@ -203,7 +205,13 @@ export function PowerCard({
             ) : (
               <Button 
                 size="sm" 
-                onClick={onAction} 
+                onClick={() => {
+                  if (isVerified && !hasENSRecord && ensName) {
+                    onAddToENS?.()
+                  } else {
+                    onAction?.()
+                  }
+                }} 
                 disabled={state === "verifying"} 
                 className={cn(
                   "gap-2 transition-all duration-200",

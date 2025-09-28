@@ -1,0 +1,14 @@
+# Hardhat artifacts and caches
+artifacts/
+cache/
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Env
+.env
+.env.local
+.env.*.local
+

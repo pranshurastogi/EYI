@@ -1,0 +1,22 @@
+{
+  "name": "eyi-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hardhat setup for EYI contracts (ProofOfHuman)",
+  "scripts": {
+    "clean": "hardhat clean",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network celoSepolia",
+    "deploy:local": "hardhat run scripts/deploy.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.8"
+  },
+  "dependencies": {
+    "@selfxyz/contracts": "*"
+  }
+}
+
